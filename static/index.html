@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MoguMoguMonster MVP</title>
+  <style>body{font-family:sans-serif;max-width:460px;margin:24px auto}button{width:100%;padding:12px;margin:6px 0}img{width:220px;height:220px;display:block;margin:8px auto}pre{background:#f4f4f4;padding:8px;border-radius:8px}</style>
+</head>
+<body>
+<h1>MoguMoguMonster</h1>
+<img id="monster" src="/static/monsters/momo/portrait.svg" alt="monster" />
+<div id="meta">Lv.1 / GP:0</div>
+<button id="bootstrap">はじめての準備</button>
+<button id="start">食事をはじめる</button>
+<button id="tap">もぐっ！</button>
+<button id="finish">食事をおわる</button>
+<button id="refresh">状態更新</button>
+<button id="result">今回の結果</button>
+<button id="history">履歴(直近20件)</button>
+<pre id="status"></pre>
+<script>
+const statusEl=document.getElementById('status');
+const metaEl=document.getElementById('meta');
+const monsterEl=document.getElementById('monster');
+const token=()=>localStorage.getItem('device_token');
+const sid=()=>localStorage.getItem('session_id');
+const setStatus=(obj)=>statusEl.textContent=JSON.stringify(obj,null,2);
+async function api(path,method='GET',body=null,withHeader=false){
+ const headers={'Content-Type':'application/json'};
+ if(withHeader&&token()) headers['X-Device-Token']=token();
+ const res=await fetch(path,{method,headers,body:body?JSON.stringify(body):undefined});
+ const json=await res.json(); if(!res.ok) throw json; return json;
+}
+async function refreshMonster(){
+ if(!token()) return;
+ const m=await api('/api/device-session/monster','GET',null,true);
+ metaEl.textContent=`Lv.${m.level} / GP:${m.growth_points} / ${m.monster_type}`;
+ monsterEl.src=m.state_asset;
+}
+document.getElementById('bootstrap').onclick=async()=>{try{const r=await api('/api/device-session/bootstrap','POST',{});localStorage.setItem('device_token',r.device_token);setStatus(r);await refreshMonster();}catch(e){setStatus(e)}};
+document.getElementById('start').onclick=async()=>{try{const r=await api('/api/sessions','POST',{device_token:token()});localStorage.setItem('session_id',r.session_id);setStatus(r);}catch(e){setStatus(e)}};
+document.getElementById('tap').onclick=async()=>{try{const r=await api(`/api/sessions/${sid()}/taps`,'POST',{device_token:token()});setStatus(r);await refreshMonster();}catch(e){setStatus(e)}};
+document.getElementById('finish').onclick=async()=>{try{const r=await api(`/api/sessions/${sid()}/finish`,'POST',{device_token:token()});setStatus(r);await refreshMonster();}catch(e){setStatus(e)}};
+document.getElementById('refresh').onclick=async()=>{try{await refreshMonster();setStatus({ok:true});}catch(e){setStatus(e)}};
+document.getElementById('result').onclick=async()=>{try{const r=await api(`/api/sessions/${sid()}/result`);setStatus(r);}catch(e){setStatus(e)}};
+document.getElementById('history').onclick=async()=>{try{const r=await api('/api/sessions/history','GET',null,true);setStatus(r);}catch(e){setStatus(e)}};
+</script>
+</body>
+</html>
