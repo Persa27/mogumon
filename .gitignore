@@ -1,3 +1,27 @@
 data/
 __pycache__/
 *.pyc
+node_modules/
+.gemini-profile/
+.gemini-output/
+.brave-chatgpt-profile/
+.brave-gemini-profile/
+.chatgpt-output/
+tmp/
+
+# Monster asset generation intermediates (sheets/prompts/references/debug/preview
+# images produced while making the final idle/eat/evolve/portrait frames).
+static/monsters/**/sheet.png
+static/monsters/**/sheet_transparent.png
+static/monsters/**/gemini_prompt.txt
+static/monsters/**/gemini_reference.png
+static/monsters/**/portrait_prompt.txt
+static/monsters/**/_debug_compare/
+static/monsters/**/_debug_sheet_grid.png
+static/monsters/**/*_preview.png
+static/monsters/**/*_preview_*.png
+static/monsters/**/*_compare.png
+static/monsters/**/*raw_evolve*.png
+static/monsters/**/*_sheet_extract.png
+static/monsters/**/*_raw_vs_processed.png
+static/monsters/**/*.transparent.png

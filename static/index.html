@@ -3,47 +3,1711 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>MoguMoguMonster MVP</title>
-  <style>body{font-family:sans-serif;max-width:460px;margin:24px auto}button{width:100%;padding:12px;margin:6px 0}img{width:220px;height:220px;display:block;margin:8px auto}pre{background:#f4f4f4;padding:8px;border-radius:8px}</style>
+  <title>MoguMoguMonster</title>
+  <style>
+    :root{
+      --frame:#74bbdf;
+      --panel:#f6f6f6;
+      --border:#1f3650;
+      --shadow:rgba(6,36,66,.16);
+      --pink:#f0b6f0;
+      --pink-deep:#d88cdb;
+      --gray:#8b8f95;
+      --gray-deep:#767b82;
+      --text:#182431;
+      --accent:#88c46d;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:"Yu Gothic UI","Hiragino Sans","Meiryo",sans-serif;
+      color:var(--text);
+      background:#d5effd;
+      min-height:100vh;
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      padding:8px;
+    }
+    .game-shell{
+      position:relative;
+      width:min(100vw - 16px, 920px);
+      aspect-ratio:16 / 9;
+      border:8px solid #d4f1ff;
+      box-shadow:0 10px 26px var(--shadow);
+      overflow:hidden;
+      background:url("/static/background/grass.png") center center / cover no-repeat;
+    }
+    .evolution-overlay,
+    .evolution-flash{
+      position:absolute;
+      inset:0;
+      display:none;
+      pointer-events:none;
+    }
+    .evolution-overlay{
+      z-index:11;
+      background:
+        radial-gradient(circle at 50% 44%, rgba(255,255,255,.82) 0 12%, rgba(255,242,154,.58) 18%, rgba(158,228,255,.22) 34%, rgba(35,102,186,.14) 56%, rgba(10,28,64,.68) 100%),
+        linear-gradient(180deg, rgba(5,18,48,.82) 0%, rgba(31,83,165,.58) 36%, rgba(184,236,255,.42) 100%);
+      animation:evolutionSky 1.8s ease-in-out infinite alternate;
+    }
+    .evolution-flash{
+      z-index:12;
+      background:
+        linear-gradient(180deg, transparent 0 16%, rgba(255,255,255,.38) 34%, transparent 56%, rgba(255,244,176,.24) 80%, transparent 100%);
+      mix-blend-mode:screen;
+      animation:evolutionFlash 1.2s ease-in-out infinite;
+    }
+    .game-shell.evolution-mode .evolution-overlay,
+    .game-shell.evolution-mode .evolution-flash{
+      display:block;
+    }
+    .game-shell.evolution-mode .hud,
+    .game-shell.evolution-mode .food-grid > .food-column,
+    .game-shell.evolution-mode .action-bar,
+    .game-shell.evolution-mode .menu-panel,
+    .game-shell.evolution-mode .combo-banner,
+    .game-shell.evolution-mode .pt-bubble,
+    .game-shell.evolution-mode .food-overlay,
+    .game-shell.evolution-mode .sparkles{
+      opacity:0 !important;
+      visibility:hidden !important;
+      pointer-events:none !important;
+    }
+    .game-shell.evolution-mode .food-grid{
+      inset:0;
+      grid-template-columns:0 1fr 0;
+      z-index:13;
+    }
+    .game-shell.evolution-mode .stage{
+      overflow:hidden;
+    }
+    .game-shell.evolution-mode .monster{
+      width:min(56vw, 360px);
+      max-width:360px;
+      z-index:14;
+      filter:
+        drop-shadow(0 0 10px rgba(255,255,255,.82))
+        drop-shadow(0 0 24px rgba(255,246,154,.58))
+        drop-shadow(0 0 42px rgba(132,221,255,.42));
+    }
+    .evolution-shadow{
+      position:absolute;
+      width:min(56vw, 360px);
+      max-width:360px;
+      opacity:0;
+      z-index:13;
+      pointer-events:none;
+      filter:
+        brightness(0)
+        drop-shadow(0 0 18px rgba(255,255,255,.48))
+        drop-shadow(0 0 42px rgba(148,226,255,.46));
+    }
+    .game-shell.evolution-mode .evolution-shadow{
+      display:block;
+    }
+    .evolution-shadow.visible{
+      opacity:.92;
+    }
+    .hud{
+      position:absolute;
+      inset:10px 10px auto;
+      display:grid;
+      grid-template-columns:1.15fr 1.2fr 1.25fr auto;
+      gap:6px;
+      z-index:10;
+    }
+    .hud-box,
+    .menu-button{
+      min-height:48px;
+      border:2px solid var(--border);
+      background:#fff;
+      box-shadow:2px 2px 0 rgba(31,54,80,.18);
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 8px;
+      font-size:14px;
+      font-weight:700;
+    }
+    .hud-box strong{font-size:16px}
+    .level-meter{
+      flex:1;
+      height:16px;
+      border:1px solid var(--border);
+      background:#e9edf2;
+      overflow:hidden;
+    }
+    .level-fill{
+      height:100%;
+      width:12%;
+      transition:width .35s ease;
+      background:linear-gradient(90deg,#89ca67 0%,#6caf4d 100%);
+    }
+    .menu-button{
+      cursor:pointer;
+      justify-content:center;
+      min-width:68px;
+    }
+    .hud-buttons{
+      display:flex;
+      gap:4px;
+    }
+    .fullscreen-button{
+      min-height:48px;
+      border:2px solid var(--border);
+      background:#fff;
+      box-shadow:2px 2px 0 rgba(31,54,80,.18);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:6px 10px;
+      min-width:44px;
+      cursor:pointer;
+      color:var(--text);
+    }
+    .fullscreen-button svg{display:block}
+    body.fs-active{
+      padding:0;
+      background:#000;
+      align-items:center;
+      justify-content:center;
+      width:100vw;
+      height:100svh;
+      overflow:hidden;
+    }
+    body.fs-active .game-shell{
+      transform:scale(var(--fs-scale,1));
+      transform-origin:center center;
+      border:none;
+    }
+    .food-grid{
+      position:absolute;
+      inset:70px 18px 100px;
+      display:grid;
+      grid-template-columns:156px 1fr 156px;
+      align-items:center;
+      z-index:6;
+    }
+    .food-column{
+      display:grid;
+      gap:14px;
+      align-content:center;
+    }
+    .food-column.right{
+      justify-items:end;
+    }
+    .food-card{
+      width:136px;
+      height:156px;
+      border:none;
+      padding:14px 10px 14px;
+      background:rgba(229,231,236,.82);
+      color:#656b74;
+      box-shadow:0 5px 16px rgba(31,54,80,.14);
+      cursor:pointer;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:flex-start;
+      gap:5px;
+      transition:transform .14s ease, background .14s ease, color .14s ease;
+    }
+    .food-card img{
+      width:102px;
+      height:102px;
+      object-fit:contain;
+      filter:grayscale(1) opacity(.72);
+    }
+    .food-card span{
+      font-size:15px;
+      font-weight:700;
+    }
+    .food-card.active{
+      background:rgba(255,246,232,.96);
+      color:#9b6c39;
+      transform:translateY(-1px);
+    }
+    .food-card.active img{
+      filter:none;
+    }
+    .stage{
+      position:relative;
+      height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:visible;
+    }
+    .combo-banner{
+      position:absolute;
+      top:8px;
+      left:50%;
+      transform:translateX(-50%) translateY(-12px) scale(.9);
+      min-width:260px;
+      max-width:min(80vw, 440px);
+      padding:8px 16px;
+      border:3px solid rgba(255,255,255,.96);
+      border-radius:999px;
+      background:linear-gradient(160deg, #ff8c42 0%, #e8320a 60%, #c0180a 100%);
+      box-shadow:
+        0 0 0 1px rgba(255,120,40,.6),
+        0 6px 0 rgba(130,30,10,.5),
+        0 10px 28px rgba(180,50,10,.45);
+      color:#fff;
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .18s ease, transform .2s cubic-bezier(.34,1.56,.64,1);
+      z-index:7;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .combo-banner.visible{
+      opacity:1;
+      transform:translateX(-50%) translateY(0) scale(1);
+    }
+    .combo-line{
+      display:flex;
+      align-items:baseline;
+      gap:2px;
+      white-space:nowrap;
+      flex-shrink:0;
+    }
+    .combo-value{
+      font-size:36px;
+      font-weight:900;
+      line-height:1;
+      letter-spacing:-.02em;
+      text-shadow:
+        0 2px 0 rgba(100,10,0,.45),
+        0 0 18px rgba(255,220,100,.7),
+        0 0 36px rgba(255,160,40,.4);
+    }
+    .combo-label{
+      font-size:15px;
+      font-weight:800;
+      letter-spacing:.06em;
+      text-shadow:0 1px 0 rgba(100,10,0,.3);
+      opacity:.92;
+    }
+    .combo-timer{
+      flex:1;
+      height:14px;
+      border-radius:999px;
+      background:rgba(0,0,0,.28);
+      border:1px solid rgba(255,255,255,.22);
+      overflow:hidden;
+      box-shadow:inset 0 2px 4px rgba(0,0,0,.3);
+    }
+    .combo-timer-fill{
+      width:100%;
+      height:100%;
+      border-radius:999px;
+      background:linear-gradient(90deg,#ffe44a 0%, #fff9a0 50%, #fff 100%);
+      box-shadow:0 0 8px rgba(255,230,60,.9), 0 0 2px #fff;
+      transform-origin:left center;
+      transition:width .2s linear;
+    }
+    .pt-bubble{
+      position:absolute;
+      left:50%;
+      top:88px;
+      transform:translate(-50%, 12px) scale(.88);
+      padding:0;
+      border:none;
+      background:transparent;
+      box-shadow:none;
+      color:#ef6d49;
+      font-size:34px;
+      font-weight:900;
+      line-height:1;
+      text-shadow:
+        0 2px 0 rgba(255,255,255,.95),
+        0 0 10px rgba(255,255,255,.72);
+      opacity:0;
+      pointer-events:none;
+      z-index:8;
+      transition:opacity .18s ease, transform .18s ease;
+    }
+    .pt-bubble.visible{
+      opacity:1;
+      transform:translate(-50%, -4px) scale(1);
+    }
+    .food-card-wrapper{
+      position:relative;
+    }
+    .food-stack{
+      position:absolute;
+      top:0;
+      display:grid;
+      grid-template-columns:repeat(3, 33px);
+      gap:2px;
+      align-content:start;
+      pointer-events:none;
+      z-index:7;
+    }
+    .food-column.left .food-card-wrapper .food-stack{
+      left:calc(100% + 5px);
+    }
+    .food-column.right .food-card-wrapper .food-stack{
+      right:calc(100% + 5px);
+    }
+    .food-stack-icon{
+      width:33px;
+      height:33px;
+      display:block;
+      object-fit:contain;
+      transform:scale(0);
+      opacity:0;
+      animation:stackPopIn 0.28s cubic-bezier(.34,1.56,.64,1) forwards;
+      will-change:transform,opacity;
+    }
+    .food-stack-count{
+      grid-column:1 / -1;
+      font-size:11px;
+      font-weight:700;
+      color:#9b6c39;
+      text-align:center;
+      line-height:1;
+      padding-top:2px;
+      transition:transform 0.2s cubic-bezier(.34,1.56,.64,1);
+    }
+    .monster{
+      width:min(18vw, 120px);
+      max-width:120px;
+      z-index:4;
+      position:relative;
+      filter:drop-shadow(0 14px 20px rgba(14,41,66,.18));
+      transform-origin:center bottom;
+      margin-top:4%;
+      transition:width .4s ease, max-width .4s ease;
+    }
+    .monster[data-stage="child"] {width:min(24vw,170px);max-width:170px}
+    .monster[data-stage="mature"]{width:min(28vw,205px);max-width:205px}
+    .monster[data-stage="final"] {width:min(32vw,230px);max-width:230px}
+    .monster.idle{
+      animation:floaty 2.4s ease-in-out infinite;
+    }
+    .monster.eating{
+      transform:translateY(-3px);
+    }
+    .monster.evolving{
+      animation:evolvePulse .56s ease-in-out infinite;
+    }
+    .food-overlay{
+      position:absolute;
+      width:min(18vw, 110px);
+      z-index:5;
+      pointer-events:none;
+      opacity:0;
+      transform:translate(-6px, 24px) scale(.92);
+      transition:opacity .18s ease, transform .18s ease;
+      filter:drop-shadow(0 8px 14px rgba(36,43,54,.18));
+    }
+    .food-overlay.active{
+      opacity:1;
+      transform:translate(-6px, 10px) scale(1);
+    }
+    .action-bar{
+      position:absolute;
+      inset:auto 0 18px;
+      display:flex;
+      justify-content:center;
+      z-index:10;
+    }
+    .tap-button{
+      border:2px solid #ffffff;
+      border-radius:18px;
+      min-width:min(56vw, 320px);
+      min-height:78px;
+      padding:14px 28px;
+      background:linear-gradient(180deg,var(--pink) 0%,var(--pink-deep) 100%);
+      color:#fff;
+      font-size:22px;
+      font-weight:900;
+      letter-spacing:.03em;
+      box-shadow:0 8px 0 rgba(148,91,155,.42);
+      cursor:pointer;
+    }
+    .tap-button.cooldown{
+      background:linear-gradient(180deg,#a7a8ad 0%,var(--gray) 100%);
+      box-shadow:0 8px 0 rgba(92,96,104,.32);
+    }
+    .sparkles{
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      opacity:0;
+      background:
+        radial-gradient(circle at 44% 28%, rgba(255,255,255,.98) 0 5px, transparent 6px),
+        radial-gradient(circle at 58% 68%, rgba(255,255,255,.95) 0 4px, transparent 5px),
+        radial-gradient(circle at 61% 36%, rgba(255,255,255,.95) 0 7px, transparent 8px),
+        radial-gradient(circle at 40% 63%, rgba(255,255,255,.96) 0 6px, transparent 7px);
+      animation:twinkle 1.2s linear infinite;
+      z-index:3;
+    }
+    .sparkles.active{opacity:1}
+    .menu-panel{
+      position:absolute;
+      top:64px;
+      right:10px;
+      width:min(86vw, 320px);
+      max-height:calc(100% - 90px);
+      overflow:auto;
+      padding:12px;
+      background:rgba(255,255,255,.96);
+      border:2px solid var(--border);
+      box-shadow:0 10px 24px rgba(11,35,56,.24);
+      z-index:20;
+      display:none;
+    }
+    .menu-panel.open{display:block}
+    .menu-panel h2{
+      margin:0 0 10px;
+      font-size:18px;
+    }
+    .menu-actions{
+      display:grid;
+      gap:8px;
+      margin-bottom:12px;
+    }
+    .menu-actions button{
+      border:2px solid var(--border);
+      background:#fff;
+      padding:10px 12px;
+      text-align:left;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .menu-section{
+      border-top:1px solid #cad9e6;
+      padding-top:10px;
+      margin-top:10px;
+    }
+    .menu-section h3{
+      margin:0 0 8px;
+      font-size:14px;
+    }
+    .history-list{
+      margin:0;
+      padding:0;
+      list-style:none;
+      display:grid;
+      gap:8px;
+    }
+    .history-list li{
+      background:#f4f8fb;
+      border:1px solid #d3dee8;
+      padding:8px;
+      font-size:12px;
+      line-height:1.45;
+    }
+    .status-line{
+      display:none;
+    }
+    /* スマートフォン縦画面 */
+    @media (max-width: 760px) and (orientation: portrait){
+      .game-shell{
+        width:100%;
+        aspect-ratio:3 / 5;
+        max-height:calc(100svh - 8px);
+      }
+      .hud{
+        inset:6px 6px auto;
+        grid-template-columns:1fr 1fr;
+        gap:4px;
+      }
+      .hud-box,
+      .menu-button{
+        min-height:38px;
+        padding:4px 6px;
+        font-size:12px;
+        gap:4px;
+      }
+      .hud-box strong{font-size:14px}
+      .level-meter{height:12px}
+      .menu-button{min-width:56px}
+      .fullscreen-button{min-height:38px;min-width:38px;padding:4px 6px}
+      .food-grid{
+        inset:90px 8px 104px;
+        grid-template-columns:110px 1fr 110px;
+      }
+      .food-card{
+        width:100px;
+        height:120px;
+        padding:10px 8px;
+        gap:4px;
+      }
+      .food-card img{
+        width:70px;
+        height:70px;
+      }
+      .food-card span{font-size:13px}
+      .monster{width:min(28vw,110px)}
+      .monster[data-stage="child"] {width:min(36vw,155px);max-width:155px}
+      .monster[data-stage="mature"]{width:min(40vw,185px);max-width:185px}
+      .monster[data-stage="final"] {width:min(44vw,210px);max-width:210px}
+      .combo-banner{
+        top:10px;
+        min-width:200px;
+        padding:7px 12px;
+        gap:8px;
+      }
+      .combo-value{font-size:28px}
+      .combo-label{font-size:13px}
+      .combo-timer{height:11px}
+      .pt-bubble{
+        top:68px;
+        font-size:28px;
+      }
+      .tap-button{
+        min-width:min(72vw, 280px);
+      }
+      .food-stack{grid-template-columns:repeat(3, 24px);gap:2px}
+      .food-stack-icon{width:24px;height:24px}
+      .food-stack-count{font-size:10px}
+    }
+
+    /* スマートフォン横画面 */
+    @media (orientation: landscape) and (max-height: 520px){
+      body{
+        padding:4px;
+        align-items:center;
+      }
+      .game-shell{
+        width:auto;
+        height:calc(100svh - 8px);
+        aspect-ratio:16 / 9;
+        max-width:calc(100vw - 8px);
+      }
+      .hud{
+        inset:4px 4px auto;
+        grid-template-columns:1fr 1fr 1fr auto;
+        gap:3px;
+      }
+      .hud-box,
+      .menu-button{
+        min-height:26px;
+        padding:2px 5px;
+        font-size:10px;
+        gap:3px;
+      }
+      .hud-box strong{font-size:11px}
+      .level-meter{height:9px}
+      .menu-button{min-width:42px;font-size:10px}
+      .fullscreen-button{min-height:26px;min-width:32px;padding:2px 5px}
+      .food-grid{
+        inset:34px 6px 56px;
+        grid-template-columns:76px 1fr 76px;
+      }
+      .food-column{gap:4px}
+      .food-card{
+        width:68px;
+        height:74px;
+        padding:6px 4px;
+        gap:2px;
+      }
+      .food-card img{
+        width:42px;
+        height:42px;
+      }
+      .food-card span{font-size:10px}
+      .monster{width:min(14vw,80px)}
+      .monster[data-stage="child"] {width:min(18vw,105px);max-width:105px}
+      .monster[data-stage="mature"]{width:min(20vw,130px);max-width:130px}
+      .monster[data-stage="final"] {width:min(22vw,150px);max-width:150px}
+      .action-bar{inset:auto 0 6px}
+      .tap-button{
+        min-width:min(36vw, 190px);
+        min-height:42px;
+        padding:7px 14px;
+        font-size:14px;
+        border-radius:12px;
+        box-shadow:0 4px 0 rgba(148,91,155,.42);
+      }
+      .combo-banner{
+        top:2px;
+        min-width:80px;
+        padding:4px 10px 8px;
+        border-radius:12px;
+      }
+      .combo-banner{min-width:160px;padding:5px 10px;gap:6px}
+      .combo-value{font-size:18px}
+      .combo-label{font-size:9px}
+      .combo-timer{height:8px}
+      .pt-bubble{
+        top:36px;
+        font-size:18px;
+      }
+      .menu-panel{
+        top:32px;
+        max-height:calc(100% - 38px);
+        width:min(68vw, 280px);
+      }
+      .game-shell.evolution-mode .monster{
+        width:min(40vw, 260px);
+        max-width:260px;
+      }
+      .evolution-shadow{
+        width:min(40vw, 260px);
+        max-width:260px;
+      }
+      .food-stack{grid-template-columns:repeat(3, 18px);gap:1px}
+      .food-stack-icon{width:18px;height:18px}
+      .food-stack-count{font-size:9px}
+    }
+    /* ---- モンスター図鑑 ---- */
+    .encyclopedia-panel{
+      position:absolute;
+      inset:0;
+      z-index:30;
+      display:none;
+      flex-direction:column;
+      background:#0a1628;
+    }
+    .encyclopedia-panel.open{display:flex}
+    .enc-header{
+      flex-shrink:0;
+      display:flex;
+      align-items:center;
+      padding:8px 12px;
+      background:linear-gradient(90deg,#1a3a6e 0%,#1e4a8a 100%);
+      border-bottom:2px solid #3a7dc8;
+      gap:10px;
+    }
+    .enc-header h2{
+      margin:0;flex:1;
+      font-size:17px;color:#e8f4ff;
+      letter-spacing:.06em;
+    }
+    .enc-close{
+      background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.3);
+      border-radius:4px;
+      color:#e8f4ff;
+      padding:5px 16px;
+      cursor:pointer;
+      font-size:13px;
+      font-weight:700;
+    }
+    .enc-close:hover{background:rgba(255,255,255,.18)}
+    .enc-body{
+      flex:1;
+      display:flex;
+      overflow:hidden;
+      min-height:0;
+    }
+    .enc-sidebar{
+      flex-shrink:0;
+      width:210px;
+      overflow-y:auto;
+      padding:8px;
+      background:rgba(8,16,40,.7);
+      border-right:1px solid rgba(58,125,200,.3);
+    }
+    .enc-grid{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:5px;
+    }
+    .enc-card{
+      background:rgba(255,255,255,.05);
+      border:1px solid rgba(58,125,200,.22);
+      border-radius:5px;
+      padding:4px 2px;
+      cursor:pointer;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:2px;
+      transition:background .1s,border-color .1s;
+    }
+    .enc-card:hover,.enc-card.selected{
+      background:rgba(58,125,200,.28);
+      border-color:#5aa0e8;
+    }
+    .enc-card-no{font-size:8px;color:#7aacdc;font-weight:700;line-height:1}
+    .enc-card-img-wrap{width:36px;height:36px;display:flex;align-items:center;justify-content:center}
+    .enc-card-img{width:36px;height:36px;object-fit:contain}
+    .enc-card-name{font-size:7px;color:#b8d8f8;text-align:center;line-height:1.2;word-break:break-all}
+    .enc-card.unknown{opacity:.55}
+    .enc-card.unknown .enc-card-name{color:rgba(180,210,240,.5)}
+    .enc-card-unknown-icon{font-size:20px;font-weight:900;color:rgba(180,210,240,.3);line-height:36px}
+    .enc-not-found{
+      padding:24px 16px;
+      text-align:center;
+      color:rgba(180,210,240,.45);
+      font-size:13px;
+      line-height:2;
+    }
+    .enc-detail{
+      flex:1;
+      overflow-y:auto;
+      padding:16px 18px;
+      color:#e0eefc;
+    }
+    .enc-empty{
+      height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:rgba(180,210,240,.35);
+      font-size:14px;
+    }
+    .enc-detail-no{font-size:11px;color:#7aacdc;font-weight:700;letter-spacing:.1em;margin-bottom:2px}
+    .enc-detail-name{font-size:22px;font-weight:900;color:#fff;text-shadow:0 0 16px rgba(100,180,255,.5);margin-bottom:12px}
+    .enc-anim-wrap{
+      display:flex;flex-direction:column;justify-content:center;align-items:center;
+      margin-bottom:14px;
+      background:rgba(255,255,255,.04);
+      border-radius:8px;padding:10px;
+      border:1px solid rgba(58,125,200,.2);
+      min-height:120px;gap:6px;
+    }
+    .enc-anim-img{
+      width:100px;height:100px;
+      object-fit:contain;
+      filter:drop-shadow(0 4px 12px rgba(100,200,255,.35));
+      transition:width .2s ease, height .2s ease;
+    }
+    .enc-stage-badge{font-size:9px;font-weight:700;letter-spacing:.08em;padding:2px 7px;border-radius:99px;
+      background:rgba(58,125,200,.25);color:#7aacdc;border:1px solid rgba(58,125,200,.35);text-transform:uppercase}
+    .enc-scale{display:flex;align-items:flex-end;gap:4px;margin-bottom:12px;padding:8px 10px;
+      background:rgba(255,255,255,.03);border-radius:6px;border:1px solid rgba(58,125,200,.15)}
+    .enc-scale-step{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1}
+    .enc-scale-dot{border-radius:50%;background:rgba(100,160,220,.25);transition:all .2s}
+    .enc-scale-step.active .enc-scale-dot{background:#7aacdc;box-shadow:0 0 6px rgba(100,180,255,.6)}
+    .enc-scale-step.active .enc-scale-lbl{color:#fff;font-weight:700}
+    .enc-scale-lbl{font-size:7px;color:rgba(180,210,240,.4);white-space:nowrap}
+    .enc-anim-wrap[data-stage="baby"]   .enc-anim-img{width:36px;height:36px}
+    .enc-anim-wrap[data-stage="child"]  .enc-anim-img{width:60px;height:60px}
+    .enc-anim-wrap[data-stage="mature"] .enc-anim-img{width:80px;height:80px}
+    .enc-detail-table{width:100%;border-collapse:collapse;font-size:12px;line-height:1.65}
+    .enc-detail-table td{padding:5px 8px;border-bottom:1px solid rgba(58,125,200,.18);vertical-align:top}
+    .enc-detail-table td:first-child{color:#7aacdc;font-weight:700;width:74px;white-space:nowrap}
+    /* 縦向きモバイル */
+    @media (max-width:760px) and (orientation:portrait){
+      .enc-sidebar{width:136px;padding:5px}
+      .enc-grid{grid-template-columns:repeat(3,1fr);gap:4px}
+      .enc-card-img-wrap,.enc-card-img{width:28px;height:28px}
+      .enc-detail{padding:10px}
+      .enc-detail-name{font-size:17px;margin-bottom:8px}
+      .enc-anim-wrap{min-height:88px}
+      .enc-anim-img{width:74px;height:74px}
+      .enc-anim-wrap[data-stage="baby"]   .enc-anim-img{width:28px;height:28px}
+      .enc-anim-wrap[data-stage="child"]  .enc-anim-img{width:46px;height:46px}
+      .enc-anim-wrap[data-stage="mature"] .enc-anim-img{width:62px;height:62px}
+      .enc-detail-table{font-size:11px}
+      .enc-detail-table td{padding:3px 5px}
+      .enc-header h2{font-size:13px}
+      .enc-close{padding:3px 10px;font-size:11px}
+    }
+    /* 横向きモバイル */
+    @media (orientation:landscape) and (max-height:520px){
+      .enc-sidebar{width:144px;padding:4px}
+      .enc-grid{grid-template-columns:repeat(4,1fr);gap:3px}
+      .enc-card{padding:2px}
+      .enc-card-img-wrap,.enc-card-img{width:26px;height:26px}
+      .enc-card-name{font-size:6px}
+      .enc-header{padding:4px 8px}
+      .enc-header h2{font-size:12px}
+      .enc-close{padding:2px 8px;font-size:10px}
+      .enc-detail{padding:8px 10px}
+      .enc-detail-name{font-size:14px;margin-bottom:6px}
+      .enc-anim-wrap{min-height:72px}
+      .enc-anim-img{width:60px;height:60px}
+      .enc-anim-wrap[data-stage="baby"]   .enc-anim-img{width:22px;height:22px}
+      .enc-anim-wrap[data-stage="child"]  .enc-anim-img{width:36px;height:36px}
+      .enc-anim-wrap[data-stage="mature"] .enc-anim-img{width:48px;height:48px}
+      .enc-detail-table{font-size:10px}
+      .enc-detail-table td{padding:2px 5px}
+      .enc-anim-wrap{padding:6px;margin-bottom:8px}
+    }
+    @keyframes floaty{
+      0%,100%{transform:translateY(0)}
+      50%{transform:translateY(-6px)}
+    }
+    @keyframes evolvePulse{
+      0%{transform:scale(.98)}
+      50%{transform:scale(1.06)}
+      100%{transform:scale(1)}
+    }
+    @keyframes twinkle{
+      0%,100%{transform:translateY(0)}
+      50%{transform:translateY(-4px)}
+    }
+    @keyframes stackPopIn{
+      to{opacity:1;transform:scale(1)}
+    }
+    @keyframes evolutionSky{
+      0%{opacity:.72}
+      100%{opacity:1}
+    }
+    @keyframes evolutionFlash{
+      0%,100%{opacity:.06}
+      50%{opacity:.34}
+    }
+  </style>
 </head>
 <body>
-<h1>MoguMoguMonster</h1>
-<img id="monster" src="/static/monsters/momo/portrait.svg" alt="monster" />
-<div id="meta">Lv.1 / GP:0</div>
-<button id="bootstrap">はじめての準備</button>
-<button id="start">食事をはじめる</button>
-<button id="tap">もぐっ！</button>
-<button id="finish">食事をおわる</button>
-<button id="refresh">状態更新</button>
-<button id="result">今回の結果</button>
-<button id="history">履歴(直近20件)</button>
-<pre id="status"></pre>
-<script>
-const statusEl=document.getElementById('status');
-const metaEl=document.getElementById('meta');
-const monsterEl=document.getElementById('monster');
-const token=()=>localStorage.getItem('device_token');
-const sid=()=>localStorage.getItem('session_id');
-const setStatus=(obj)=>statusEl.textContent=JSON.stringify(obj,null,2);
-async function api(path,method='GET',body=null,withHeader=false){
- const headers={'Content-Type':'application/json'};
- if(withHeader&&token()) headers['X-Device-Token']=token();
- const res=await fetch(path,{method,headers,body:body?JSON.stringify(body):undefined});
- const json=await res.json(); if(!res.ok) throw json; return json;
-}
-async function refreshMonster(){
- if(!token()) return;
- const m=await api('/api/device-session/monster','GET',null,true);
- metaEl.textContent=`Lv.${m.level} / GP:${m.growth_points} / ${m.monster_type}`;
- monsterEl.src=m.state_asset;
-}
-document.getElementById('bootstrap').onclick=async()=>{try{const r=await api('/api/device-session/bootstrap','POST',{});localStorage.setItem('device_token',r.device_token);setStatus(r);await refreshMonster();}catch(e){setStatus(e)}};
-document.getElementById('start').onclick=async()=>{try{const r=await api('/api/sessions','POST',{device_token:token()});localStorage.setItem('session_id',r.session_id);setStatus(r);}catch(e){setStatus(e)}};
-document.getElementById('tap').onclick=async()=>{try{const r=await api(`/api/sessions/${sid()}/taps`,'POST',{device_token:token()});setStatus(r);await refreshMonster();}catch(e){setStatus(e)}};
-document.getElementById('finish').onclick=async()=>{try{const r=await api(`/api/sessions/${sid()}/finish`,'POST',{device_token:token()});setStatus(r);await refreshMonster();}catch(e){setStatus(e)}};
-document.getElementById('refresh').onclick=async()=>{try{await refreshMonster();setStatus({ok:true});}catch(e){setStatus(e)}};
-document.getElementById('result').onclick=async()=>{try{const r=await api(`/api/sessions/${sid()}/result`);setStatus(r);}catch(e){setStatus(e)}};
-document.getElementById('history').onclick=async()=>{try{const r=await api('/api/sessions/history','GET',null,true);setStatus(r);}catch(e){setStatus(e)}};
-</script>
+  <main class="game-shell" id="gameShell">
+    <div class="evolution-overlay" aria-hidden="true"></div>
+    <div class="evolution-flash" aria-hidden="true"></div>
+    <header class="hud">
+      <div class="hud-box">なまえ：<strong id="monsterName">モモ</strong></div>
+      <div class="hud-box">レベル：<strong id="levelValue">1</strong><div class="level-meter"><div class="level-fill" id="levelFill"></div></div></div>
+      <div class="hud-box">たべたかいすう：<strong id="eatCount">0</strong></div>
+      <div class="hud-buttons">
+        <button class="menu-button" id="menuToggle">メニュー</button>
+        <button class="fullscreen-button" id="fullscreenToggle" title="全画面" aria-label="全画面切替">
+          <svg id="fsIcon" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M1 6V1h5M12 1h5v5M17 12v5h-5M6 17H1v-5"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <section class="food-grid">
+      <div class="food-column left" id="leftFoods"></div>
+      <div class="stage">
+        <div class="combo-banner" id="comboBanner">
+          <div class="combo-line">
+            <span class="combo-value" id="comboValue">1</span><span class="combo-label">コンボ</span>
+          </div>
+          <div class="combo-timer"><div class="combo-timer-fill" id="comboTimerFill"></div></div>
+        </div>
+        <div class="pt-bubble" id="ptBubble">+10pt</div>
+        <div class="sparkles" id="sparkles"></div>
+        <img id="evolutionShadow" class="evolution-shadow" src="/static/monsters/baby/baby/evolve/frame1.png" alt="" />
+        <img id="monster" class="monster idle" data-stage="baby" src="/static/monsters/baby/baby/idle/frame1.png" alt="monster" />
+        <img id="foodOverlay" class="food-overlay" src="/static/foods/apple.svg" alt="food" />
+      </div>
+      <div class="food-column right" id="rightFoods"></div>
+    </section>
+
+    <section class="action-bar">
+      <button class="tap-button" id="tapButton">たべたよ！</button>
+    </section>
+
+    <aside class="menu-panel" id="menuPanel">
+      <h2>保護者メニュー</h2>
+      <div class="menu-actions">
+        <button id="openEncyclopedia">モンスター図鑑をみる</button>
+        <button id="finishSession">今回の食事を終了する</button>
+        <button id="showResult">今回の結果をみる</button>
+        <button id="reloadMonster">新しいモンスターにする</button>
+      </div>
+      <div class="menu-section">
+        <h3>履歴</h3>
+        <ul class="history-list" id="historyList"></ul>
+      </div>
+      <div class="menu-section">
+        <h3>メッセージ</h3>
+        <div id="menuStatus">準備中…</div>
+      </div>
+    </aside>
+
+    <div class="status-line" id="statusLine">読み込み中…</div>
+
+    <div class="encyclopedia-panel" id="encyclopediaPanel">
+      <div class="enc-header">
+        <h2>📖 モンスター図鑑</h2>
+        <button class="enc-close" id="encClose">とじる</button>
+      </div>
+      <div class="enc-body">
+        <div class="enc-sidebar">
+          <div class="enc-grid" id="encGrid"></div>
+        </div>
+        <div class="enc-detail" id="encDetail">
+          <div class="enc-empty">モンスターをえらんでね</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const MONSTER_LABELS = {
+      baby:"ベビー",
+      draup:"ドラップ", garoron:"ガロロン", fishul:"フィシュル", kororon:"コロロン", lumina:"ルミナ",
+      flare_drag:"フレアドラグ", bolt_drag:"ボルトドラグ", frost_drag:"フロストドラグ",
+      magma_rock:"マグマロック", shine_drag:"シャインドラグ", burst_garo:"バーストガロ",
+      bolt_garo:"ボルトガロ", aqua_garo:"アクアガロ", terra_garo:"テラガロ", holy_garo:"ホーリーガロ",
+      steam_fin:"スチームフィン", plasma_fin:"プラズマフィン", glacies:"グラキエス",
+      coral_guard:"コーラルガルド", angel_fin:"エンゼルフィン", burn_golem:"バーンゴレム",
+      pulse_rock:"パルスロック", splash_terra:"スプラッシュテラ", forest_guard:"フォレストガルド",
+      rune_golem:"ルーンゴーレム", flare_eterna:"フレアエテルナ", bolt_eterna:"ボルトエテルナ",
+      crystal_eterna:"クリスタルエテルナ", leaf_eterna:"リーフエテルナ", eterna:"エテルナ",
+      prometheus:"プロメテウス", indra_drag:"インドラ・ドラグ", agniva:"アグニヴァ",
+      gaia_drag:"ガイアドラグ", sol_dragnir:"ソル・ドラグニル", ifrit_leo:"イフリート・レオ",
+      raiden_volf:"ライデンヴォルフ", kelpie_volt:"ケルピーヴォルト", yggdra_beast:"ユグドラビースト",
+      sirius_star:"シリウス・スター", levia_burn:"レヴィア・バーン", thunder_kaiser:"サンダーカイザー",
+      poseidram:"ポセイドラム", okeanos:"オケアノス", seraph_aqua:"セラフィ・アクア",
+      titan_magma:"タイタン・マグマ", thor_terra:"トール・テラ", neptune_rock:"ネプチュン・ロック",
+      yggdrasil:"ユグドラシル", chronos_terra:"クロノス・テラ", phoenix:"フェニックス",
+      astral_rai:"アストラル・ライ", diamond_halo:"ダイアモンド・ハロー", eden_spirit:"エデン・スピリット",
+      zeus_omega:"ゼウス・オメガ",
+    };
+    const FOODS = [
+      { key: "apple", label: "りんご", asset: "/static/foods/apple.svg", side: "left" },
+      { key: "carrot", label: "にんじん", asset: "/static/foods/carrot.svg", side: "left" },
+      { key: "fish", label: "おさかな", asset: "/static/foods/fish.svg", side: "right" },
+      { key: "broccoli", label: "ブロッコリー", asset: "/static/foods/broccoli.svg", side: "right" }
+    ];
+
+    const monsterEl = document.getElementById("monster");
+    const gameShellEl = document.getElementById("gameShell");
+    const evolutionShadowEl = document.getElementById("evolutionShadow");
+    const foodOverlayEl = document.getElementById("foodOverlay");
+    const sparklesEl = document.getElementById("sparkles");
+    const tapButtonEl = document.getElementById("tapButton");
+    const monsterNameEl = document.getElementById("monsterName");
+    const levelValueEl = document.getElementById("levelValue");
+    const levelFillEl = document.getElementById("levelFill");
+    const eatCountEl = document.getElementById("eatCount");
+    const menuPanelEl = document.getElementById("menuPanel");
+    const menuStatusEl = document.getElementById("menuStatus");
+    const historyListEl = document.getElementById("historyList");
+    const statusLineEl = document.getElementById("statusLine");
+    const leftFoodsEl = document.getElementById("leftFoods");
+    const rightFoodsEl = document.getElementById("rightFoods");
+    const comboBannerEl = document.getElementById("comboBanner");
+    const comboValueEl = document.getElementById("comboValue");
+    const comboTimerFillEl = document.getElementById("comboTimerFill");
+    const ptBubbleEl = document.getElementById("ptBubble");
+
+    let deviceToken = null;
+    let playerId = localStorage.getItem("mgu_player_id");
+    let sessionId = null;
+    let selectedFood = "apple";
+    let currentMonster = "baby";
+    let currentMonsterExt = "png";
+    let eatCount = 0;
+    let animationTimer = null;
+    let sessionFinished = false;
+    let foodStackCounts = {};
+    const STACK_MAX = 12;
+    let currentLevel = 1;
+    let growthPoints = 0;
+    let comboCount = 0;
+    let ptBubbleTimer = null;
+    let comboSecondsRemaining = 0;
+    let comboContinueSeconds = 30;
+    let comboCountdownTimer = null;
+    let evolutionMode = false;
+    let pendingEvolutionMonster = null;
+    let pendingEvolutionMonsterExt = "png";
+    let obtainedMonsters = new Set(["baby/baby"]);
+
+    function getSceneFrames(assetFamily, scene, ext) {
+      const fileExt = ext || currentMonsterExt || "png";
+      return [1, 2, 3].map((n) => `/static/monsters/${assetFamily}/${scene}/frame${n}.${fileExt}`);
+    }
+
+    async function api(path, method = "GET", body = null, withToken = false) {
+      const headers = { "Content-Type": "application/json" };
+      if (withToken && deviceToken) {
+        headers["X-Device-Token"] = deviceToken;
+      }
+      const res = await fetch(path, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        throw json;
+      }
+      return json;
+    }
+
+    function setStatus(text) {
+      menuStatusEl.textContent = text;
+    }
+
+    function requiredPointsForLevel(level) {
+      return (3 + (level * 2)) * 10;
+    }
+
+    function updateComboDisplay() {
+      comboValueEl.textContent = String(comboCount);
+      const isVisible = comboCount > 1 && comboSecondsRemaining > 0 && !sessionFinished;
+      comboBannerEl.classList.toggle("visible", isVisible);
+      const percent = Math.max(0, Math.min(100, (comboSecondsRemaining / Math.max(1, comboContinueSeconds)) * 100));
+      comboTimerFillEl.style.width = `${percent}%`;
+    }
+
+    function stopComboCountdown() {
+      if (comboCountdownTimer) {
+        window.clearInterval(comboCountdownTimer);
+        comboCountdownTimer = null;
+      }
+    }
+
+    function startComboCountdown() {
+      stopComboCountdown();
+      if (comboCount <= 1 || comboSecondsRemaining <= 0 || sessionFinished) {
+        updateComboDisplay();
+        return;
+      }
+      comboCountdownTimer = window.setInterval(() => {
+        comboSecondsRemaining = Math.max(0, comboSecondsRemaining - 0.1);
+        if (comboSecondsRemaining <= 0) {
+          comboCount = 0;
+          stopComboCountdown();
+        }
+        updateComboDisplay();
+      }, 100);
+    }
+
+    function setComboState(count, secondsRemaining, continueSeconds = comboContinueSeconds) {
+      comboCount = count;
+      comboSecondsRemaining = Math.max(0, secondsRemaining);
+      comboContinueSeconds = continueSeconds;
+      updateComboDisplay();
+      startComboCountdown();
+    }
+
+    function showPtBubble(points) {
+      if (ptBubbleTimer) {
+        window.clearTimeout(ptBubbleTimer);
+      }
+      ptBubbleEl.textContent = `+${points}pt`;
+      ptBubbleEl.classList.remove("visible");
+      void ptBubbleEl.offsetWidth;
+      ptBubbleEl.classList.add("visible");
+      ptBubbleTimer = window.setTimeout(() => {
+        ptBubbleEl.classList.remove("visible");
+      }, 1100);
+    }
+
+    function addToFoodStack(foodKey) {
+      const food = FOODS.find((f) => f.key === foodKey);
+      if (!food) return;
+      foodStackCounts[foodKey] = (foodStackCounts[foodKey] || 0) + 1;
+      const count = foodStackCounts[foodKey];
+      const stack = document.querySelector(`.food-stack[data-food-key="${foodKey}"]`);
+      if (!stack) return;
+      if (count <= STACK_MAX) {
+        const img = document.createElement("img");
+        img.src = food.asset;
+        img.alt = food.label;
+        img.className = "food-stack-icon";
+        stack.appendChild(img);
+      } else {
+        let badge = stack.querySelector(".food-stack-count");
+        if (!badge) {
+          badge = document.createElement("span");
+          badge.className = "food-stack-count";
+          stack.appendChild(badge);
+        }
+        badge.textContent = `×${count}`;
+        badge.style.transform = "scale(1.35)";
+        void badge.offsetWidth;
+        badge.style.transform = "scale(1)";
+      }
+    }
+
+    async function absorbStackFoods() {
+      const allIcons = Array.from(document.querySelectorAll(".food-stack-icon"));
+      const allBadges = Array.from(document.querySelectorAll(".food-stack-count"));
+      if (!allIcons.length) {
+        clearFoodStacks();
+        return;
+      }
+      const monsterRect = monsterEl.getBoundingClientRect();
+      const monsterCx = monsterRect.left + monsterRect.width / 2;
+      const monsterCy = monsterRect.top + monsterRect.height / 2;
+      allBadges.forEach((el) => { el.style.transition = "opacity 0.3s"; el.style.opacity = "0"; });
+      allIcons.forEach((icon, i) => {
+        const rect = icon.getBoundingClientRect();
+        const iconCx = rect.left + rect.width / 2;
+        const iconCy = rect.top + rect.height / 2;
+        const dx = monsterCx - iconCx;
+        const dy = monsterCy - iconCy;
+        icon.style.animation = "none";
+        icon.style.opacity = "1";
+        icon.style.transform = "scale(1)";
+        void icon.offsetWidth;
+        window.setTimeout(() => {
+          icon.style.transition = "transform 0.5s cubic-bezier(.4,0,.6,1), opacity 0.5s ease";
+          icon.style.transform = `translate(${dx}px, ${dy}px) scale(0.1)`;
+          icon.style.opacity = "0";
+        }, i * 25);
+      });
+      await new Promise((resolve) => window.setTimeout(resolve, 500 + allIcons.length * 25));
+      clearFoodStacks();
+    }
+
+    function clearFoodStacks() {
+      foodStackCounts = {};
+      document.querySelectorAll(".food-stack").forEach((stack) => { stack.innerHTML = ""; });
+    }
+
+    function stopAnimation() {
+      if (animationTimer) {
+        clearInterval(animationTimer);
+        animationTimer = null;
+      }
+    }
+
+    function setEvolutionMode(isActive) {
+      evolutionMode = isActive;
+      gameShellEl.classList.toggle("evolution-mode", isActive);
+      if (!isActive) {
+        evolutionShadowEl.classList.remove("visible");
+      }
+    }
+
+    function setFoodOverlay() {
+      const activeFood = FOODS.find((food) => food.key === selectedFood) || FOODS[0];
+      foodOverlayEl.src = activeFood.asset;
+    }
+
+    function renderFoodButtons() {
+      leftFoodsEl.innerHTML = "";
+      rightFoodsEl.innerHTML = "";
+      for (const food of FOODS) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "food-card-wrapper";
+        const button = document.createElement("button");
+        button.className = `food-card${food.key === selectedFood ? " active" : ""}`;
+        button.innerHTML = `<img src="${food.asset}" alt="${food.label}"><span>${food.label}</span>`;
+        button.addEventListener("click", () => {
+          selectedFood = food.key;
+          setFoodOverlay();
+          renderFoodButtons();
+        });
+        wrapper.appendChild(button);
+        wrapper.appendChild(buildFoodStack(food));
+        if (food.side === "left") {
+          leftFoodsEl.appendChild(wrapper);
+        } else {
+          rightFoodsEl.appendChild(wrapper);
+        }
+      }
+    }
+
+    function buildFoodStack(food) {
+      const stack = document.createElement("div");
+      stack.className = "food-stack";
+      stack.dataset.foodKey = food.key;
+      const count = foodStackCounts[food.key] || 0;
+      const shown = Math.min(count, STACK_MAX);
+      for (let i = 0; i < shown; i++) {
+        const img = document.createElement("img");
+        img.src = food.asset;
+        img.alt = food.label;
+        img.className = "food-stack-icon";
+        img.style.animation = "none";
+        img.style.opacity = "1";
+        img.style.transform = "scale(1)";
+        stack.appendChild(img);
+      }
+      if (count > STACK_MAX) {
+        const badge = document.createElement("span");
+        badge.className = "food-stack-count";
+        badge.textContent = `×${count}`;
+        stack.appendChild(badge);
+      }
+      return stack;
+    }
+
+    function playScene(scene, durationMs = 0) {
+      stopAnimation();
+      const frames = getSceneFrames(currentMonster, scene, currentMonsterExt);
+      const order = [0, 1, 2, 1];
+      let index = 0;
+      monsterEl.src = frames[order[index]];
+      const sceneClass = scene === "evolve" ? "evolving" : scene === "eat" ? "eating" : "idle";
+      monsterEl.className = `monster ${sceneClass}`;
+      foodOverlayEl.classList.toggle("active", scene === "eat");
+      sparklesEl.classList.toggle("active", scene === "evolve");
+      animationTimer = window.setInterval(() => {
+        index = (index + 1) % order.length;
+        monsterEl.src = frames[order[index]];
+      }, scene === "idle" ? 500 : scene === "eat" ? 180 : 240);
+      if (durationMs > 0) {
+        window.setTimeout(() => {
+          if (!sessionFinished && !evolutionMode) {
+            playScene("idle");
+          }
+        }, durationMs);
+      }
+    }
+
+    async function runEvolutionScene(durationMs = 1800) {
+      const fromMonster = currentMonster;
+      setEvolutionMode(true);
+      stopAnimation();
+      const toMonster = pendingEvolutionMonster || currentMonster;
+      const fromFrames = getSceneFrames(fromMonster, "evolve", currentMonsterExt);
+      const toFrames = getSceneFrames(toMonster, "evolve", pendingEvolutionMonsterExt);
+      const order = [0, 1, 2, 1];
+      monsterEl.className = "monster evolving";
+      evolutionShadowEl.classList.add("visible");
+      let tick = 0;
+      animationTimer = window.setInterval(() => {
+        const frameIndex = order[tick % order.length];
+        monsterEl.src = fromFrames[frameIndex] || fromFrames[0];
+        evolutionShadowEl.src = toFrames[frameIndex] || toFrames[0];
+        const showShadow = tick % 2 === 1;
+        monsterEl.style.opacity = showShadow ? "0.24" : "1";
+        evolutionShadowEl.style.opacity = showShadow ? "0.92" : "0.16";
+        tick += 1;
+      }, 190);
+      await new Promise((resolve) => window.setTimeout(resolve, Math.max(900, durationMs - 700)));
+      stopAnimation();
+      currentMonster = toMonster;
+      currentMonsterExt = pendingEvolutionMonsterExt;
+      monsterEl.className = "monster evolving";
+      monsterEl.style.opacity = "1";
+      evolutionShadowEl.style.opacity = "0";
+      evolutionShadowEl.classList.remove("visible");
+      let finalIndex = 0;
+      monsterEl.src = toFrames[order[finalIndex]] || toFrames[0];
+      animationTimer = window.setInterval(() => {
+        finalIndex = (finalIndex + 1) % order.length;
+        monsterEl.src = toFrames[order[finalIndex]] || toFrames[0];
+      }, 210);
+      await new Promise((resolve) => window.setTimeout(resolve, 3000));
+      stopAnimation();
+      setEvolutionMode(false);
+      pendingEvolutionMonster = null;
+      pendingEvolutionMonsterExt = "png";
+      monsterEl.style.opacity = "1";
+      if (!sessionFinished) {
+        playScene("idle");
+      }
+    }
+
+    function updateHud(monster) {
+      currentMonster = monster.asset_family || monster.monster_type;
+      currentMonsterExt = monster.asset_ext || currentMonsterExt;
+      currentLevel = monster.level;
+      growthPoints = monster.growth_points;
+      const monsterSimpleKey = currentMonster.split("/").pop();
+      monsterNameEl.textContent = monster.display_name || MONSTER_LABELS[monsterSimpleKey] || monsterSimpleKey;
+      if (Array.isArray(monster.obtained_monsters)) {
+        obtainedMonsters = new Set(monster.obtained_monsters);
+      }
+      const monsterEl = document.getElementById("monster");
+      if (monsterEl) {
+        const stg = currentMonster.split("/")[0] || "baby";
+        monsterEl.dataset.stage = stg;
+      }
+      levelValueEl.textContent = String(currentLevel);
+      const pointsForCurrentLevel = monster.points_into_level ?? (() => {
+        let remaining = growthPoints;
+        for (let level = 1; level < currentLevel; level += 1) {
+          remaining -= requiredPointsForLevel(level);
+        }
+        return remaining;
+      })();
+      const neededForNextLevel = monster.points_needed_for_next_level ?? requiredPointsForLevel(currentLevel);
+      const gaugePercent = Math.max(0, Math.min(100, (pointsForCurrentLevel / neededForNextLevel) * 100));
+      levelFillEl.style.width = `${gaugePercent}%`;
+    }
+
+    function deriveLevelProgress(points) {
+      let derivedLevel = 1;
+      let remaining = points;
+      while (remaining >= requiredPointsForLevel(derivedLevel)) {
+        remaining -= requiredPointsForLevel(derivedLevel);
+        derivedLevel += 1;
+      }
+      return {
+        level: derivedLevel,
+        pointsIntoLevel: remaining,
+        pointsNeededForNextLevel: requiredPointsForLevel(derivedLevel)
+      };
+    }
+
+    function updateGrowthHudFromTap(result) {
+      const safeGrowthPoints = typeof result.growth_points === "number" ? result.growth_points : growthPoints + (result.granted_points || 0);
+      const derived = deriveLevelProgress(safeGrowthPoints);
+      currentLevel = result.level ?? derived.level;
+      growthPoints = safeGrowthPoints;
+      levelValueEl.textContent = String(currentLevel);
+      const pointsIntoLevel = result.points_into_level ?? derived.pointsIntoLevel;
+      const pointsNeededForNextLevel = result.points_needed_for_next_level ?? derived.pointsNeededForNextLevel;
+      const gaugePercent = Math.max(
+        0,
+        Math.min(100, (pointsIntoLevel / (pointsNeededForNextLevel || 1)) * 100)
+      );
+      levelFillEl.style.width = `${gaugePercent}%`;
+      return {
+        leveledUp: result.leveled_up ?? (currentLevel > 1 && pointsIntoLevel === 0),
+        level: currentLevel
+      };
+    }
+
+    async function bootstrapFreshMonster() {
+      deviceToken = null;
+      sessionId = null;
+      eatCount = 0;
+      sessionFinished = false;
+      clearFoodStacks();
+      currentLevel = 1;
+      growthPoints = 0;
+      stopComboCountdown();
+      comboCount = 0;
+      comboSecondsRemaining = 0;
+      comboContinueSeconds = 30;
+      eatCountEl.textContent = "0";
+      updateComboDisplay();
+      ptBubbleEl.classList.remove("visible");
+      const boot = await api("/api/device-session/bootstrap", "POST", playerId ? {player_id: playerId} : {});
+      deviceToken = boot.device_token;
+      playerId = boot.player_id;
+      localStorage.setItem("mgu_player_id", playerId);
+      const monster = await api("/api/device-session/monster", "GET", null, true);
+      updateHud(monster);
+      playScene("idle");
+      await ensureSession();
+      setStatus("新しいモンスターでスタート！");
+    }
+
+    async function ensureSession() {
+      if (sessionId && !sessionFinished) {
+        return;
+      }
+      const session = await api("/api/sessions", "POST", { device_token: deviceToken });
+      sessionId = session.session_id;
+      sessionFinished = false;
+    }
+
+    async function loadHistory() {
+      const history = await api("/api/admin/history?limit=8");
+      historyListEl.innerHTML = "";
+      for (const row of history.sessions) {
+        const item = document.createElement("li");
+        item.textContent = `ポイント:${row.total_points} / コンボ:${row.max_combo} / ${new Date(row.started_at).toLocaleString("ja-JP")}`;
+        historyListEl.appendChild(item);
+      }
+      if (!history.sessions.length) {
+        historyListEl.innerHTML = "<li>まだ履歴はありません。</li>";
+      }
+    }
+
+    async function tapMeal() {
+      if (!deviceToken) {
+        return;
+      }
+      await ensureSession();
+      tapButtonEl.classList.add("cooldown");
+      try {
+        const result = await api(`/api/sessions/${sessionId}/taps`, "POST", { device_token: deviceToken, food_type: selectedFood });
+        setComboState(
+          result.combo_count,
+          result.combo_seconds_remaining ?? 0,
+          result.combo_continue_seconds ?? 30
+        );
+        if (result.is_valid) {
+          eatCount += 1;
+          addToFoodStack(selectedFood);
+          eatCountEl.textContent = String(eatCount);
+          const growthState = updateGrowthHudFromTap(result);
+          const previousMonster = currentMonster;
+          const monster = result.monster || await api("/api/device-session/monster", "GET", null, true);
+          await api("/api/device-session/monster", "GET", null, true);
+          showPtBubble(result.granted_points);
+          if (result.evolved) {
+            pendingEvolutionMonster = monster.asset_family || monster.monster_type;
+            pendingEvolutionMonsterExt = monster.asset_ext || "png";
+            currentMonster = previousMonster;
+            await absorbStackFoods();
+            await runEvolutionScene(2200);
+            updateHud(monster);
+            setStatus(`${monster.display_name || monsterNameEl.textContent}にしんかしたよ！`);
+          } else {
+            updateHud(monster);
+            playScene("eat", 1000);
+          }
+          if (!result.evolved && growthState.leveledUp) {
+            setStatus(`${FOODS.find((food) => food.key === selectedFood).label}をぱくっ！ レベルアップ！ Lv.${currentLevel}`);
+          } else {
+            if (!result.evolved) {
+              setStatus(`${FOODS.find((food) => food.key === selectedFood).label}をぱくっ！ +${result.granted_points}pt`);
+            }
+          }
+        } else {
+          setStatus("ちょっとはやいみたい。ゆっくり食べよう！");
+        }
+      } catch (error) {
+        setStatus(error?.error?.message || "タップに失敗しました");
+      } finally {
+        window.setTimeout(() => tapButtonEl.classList.remove("cooldown"), 450);
+      }
+    }
+
+    async function finishCurrentSession() {
+      if (!sessionId || sessionFinished) {
+        setStatus("終了できる食事がありません。");
+        return;
+      }
+      const result = await api(`/api/sessions/${sessionId}/finish`, "POST", { device_token: deviceToken });
+      sessionFinished = true;
+      stopComboCountdown();
+      comboCount = 0;
+      comboSecondsRemaining = 0;
+      updateComboDisplay();
+      await runEvolutionScene(2200);
+      setStatus(result.status === "finished" ? "進化したよ！" : "食事を終了しました。");
+      await loadHistory();
+    }
+
+    async function showCurrentResult() {
+      if (!sessionId) {
+        setStatus("まだ結果がありません。");
+        return;
+      }
+      const result = await api(`/api/sessions/${sessionId}/result`);
+      setStatus(`今回の結果: ${result.total_points}pt / 最大コンボ ${result.max_combo}`);
+    }
+
+    const fullscreenToggleEl = document.getElementById("fullscreenToggle");
+    const fsIconEl = document.getElementById("fsIcon");
+    const FS_ENTER = '<path d="M1 6V1h5M12 1h5v5M17 12v5h-5M6 17H1v-5"/>';
+    const FS_EXIT  = '<path d="M6 1v5H1M17 6h-5V1M12 17v-5h5M1 12h5v5"/>';
+
+    function updateFsButton(isFs) {
+      fsIconEl.innerHTML = isFs ? FS_EXIT : FS_ENTER;
+      fullscreenToggleEl.title = isFs ? "全画面を解除" : "全画面";
+    }
+
+    function applyFsScale() {
+      requestAnimationFrame(() => {
+        const scale = Math.min(
+          window.innerWidth  / gameShellEl.offsetWidth,
+          window.innerHeight / gameShellEl.offsetHeight
+        );
+        gameShellEl.style.setProperty("--fs-scale", scale);
+      });
+    }
+
+    fullscreenToggleEl.addEventListener("click", () => {
+      if (!document.fullscreenElement) {
+        (document.documentElement.requestFullscreen
+          ? document.documentElement.requestFullscreen()
+          : document.documentElement.webkitRequestFullscreen
+            ? document.documentElement.webkitRequestFullscreen()
+            : Promise.reject()
+        ).catch(() => {});
+      } else {
+        (document.exitFullscreen
+          ? document.exitFullscreen()
+          : document.webkitExitFullscreen
+            ? document.webkitExitFullscreen()
+            : Promise.reject()
+        ).catch(() => {});
+      }
+    });
+
+    function onFullscreenChange() {
+      const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+      document.body.classList.toggle("fs-active", isFs);
+      updateFsButton(isFs);
+      if (isFs) {
+        applyFsScale();
+      } else {
+        gameShellEl.style.removeProperty("--fs-scale");
+      }
+    }
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", onFullscreenChange);
+
+    document.getElementById("menuToggle").addEventListener("click", async () => {
+      menuPanelEl.classList.toggle("open");
+      if (menuPanelEl.classList.contains("open")) {
+        await loadHistory();
+      }
+    });
+    document.getElementById("finishSession").addEventListener("click", finishCurrentSession);
+    document.getElementById("showResult").addEventListener("click", showCurrentResult);
+    document.getElementById("reloadMonster").addEventListener("click", bootstrapFreshMonster);
+    tapButtonEl.addEventListener("click", tapMeal);
+
+    window.addEventListener("load", async () => {
+      renderFoodButtons();
+      setFoodOverlay();
+
+      await bootstrapFreshMonster();
+    });
+
+    // ---- モンスター図鑑 ----
+    const ENC_RAW = [
+      ["001","baby/baby","ベビー","はじまりのモンスター","ノーマル","なし","なし","まるくてやわらかい、はじまりのモンスター。なんでもたべてすくすくそだつよ。"],
+      ["002","child/draup","ドラップ","チビりゅうモンスター","ドラゴン","ベビー","りんごをよくたべてレベル３になるとベビーからしんか","あかいうろこのチビりゅう。しっぽのほのおがきもちであかるくゆれるよ。"],
+      ["003","child/garoron","ガロロン","チビけものモンスター","でんき","ベビー","にんじんをよくたべてレベル３になるとベビーからしんか","すばしっこいチビけもの。ちいさなからだにでんきをためているよ。"],
+      ["004","child/fishul","フィシュル","チビうおモンスター","みず","ベビー","さかなをよくたべてレベル３になるとベビーからしんか","みずのなかをすいすいおよぐチビうお。ひれがきれいにひかるよ。"],
+      ["005","child/kororon","コロロン","チビいわモンスター","くさ・いわ","ベビー","ブロッコリーをよくたべてレベル３になるとベビーからしんか","まるころころんとしたチビいわ。やわらかなくさがあたまにはえているよ。"],
+      ["006","child/lumina","ルミナ","ひかりのモンスター","ひかり","ベビー","バランスよくたべてレベル３になるとベビーからしんか","やわらかなひかりにつつまれたモンスター。こころのやさしさがかがやくよ。"],
+      ["007","mature/flare_drag","フレアドラグ","かざんりゅうモンスター","ドラゴン・ほのお","ドラップ","りんごをよくたべてレベル６になるとドラップからしんか","かざんのほのおをあやつるりゅう。たてがみがもえあがってきれいだよ。"],
+      ["008","mature/bolt_drag","ボルトドラグ","いかずちりゅうモンスター","ドラゴン・でんき","ドラップ","にんじんをよくたべてレベル６になるとドラップからしんか","いかずちをよぶりゅう。からだじゅうにでんきがはしってかがやくよ。"],
+      ["009","mature/frost_drag","フロストドラグ","こおりりゅうモンスター","ドラゴン・こおり","ドラップ","さかなをよくたべてレベル６になるとドラップからしんか","こおりのいきをはくりゅう。うろこがつめたくひかってうつくしいよ。"],
+      ["010","mature/magma_rock","マグマロック","マグマいわモンスター","ドラゴン・いわ","ドラップ","ブロッコリーをよくたべてレベル６になるとドラップからしんか","マグマでできたいわのモンスター。からだからねつがわきでているよ。"],
+      ["011","mature/shine_drag","シャインドラグ","ひかりりゅうモンスター","ドラゴン・ひかり","ドラップ","バランスよくたべてレベル６になるとドラップからしんか","ひかりにつつまれたりゅう。やさしいかがやきでまわりをてらすよ。"],
+      ["012","mature/burst_garo","バーストガロ","ばくれつけものモンスター","ほのお・でんき","ガロロン","りんごをよくたべてレベル６になるとガロロンからしんか","ばくはつのエネルギーをもつけもの。たてがみがほのおのようにもえるよ。"],
+      ["013","mature/bolt_garo","ボルトガロ","らいじんけものモンスター","でんき","ガロロン","にんじんをよくたべてレベル６になるとガロロンからしんか","いなずまをあやつるすばしっこいけもの。はしるとでんきがほとばしるよ。"],
+      ["014","mature/aqua_garo","アクアガロ","みずけものモンスター","でんき・みず","ガロロン","さかなをよくたべてレベル６になるとガロロンからしんか","みずとでんきをあわせもつけもの。みずのなかでもすばやくうごくよ。"],
+      ["015","mature/terra_garo","テラガロ","だいちけものモンスター","でんき・くさ","ガロロン","ブロッコリーをよくたべてレベル６になるとガロロンからしんか","だいちのちからをもつけもの。はしるとだいちがふるえるよ。"],
+      ["016","mature/holy_garo","ホーリーガロ","せいなるけものモンスター","でんき・ひかり","ガロロン","バランスよくたべてレベル６になるとガロロンからしんか","せいなるひかりをまとうけもの。こうごうしいかがやきがまわりをまもるよ。"],
+      ["017","mature/steam_fin","スチームフィン","じょうきうおモンスター","みず・ほのお","フィシュル","りんごをよくたべてレベル６になるとフィシュルからしんか","じょうきをはなつさかな。みずとほのおがまじわるからだがふしぎだよ。"],
+      ["018","mature/plasma_fin","プラズマフィン","プラズマうおモンスター","みず・でんき","フィシュル","にんじんをよくたべてレベル６になるとフィシュルからしんか","プラズマをはなつさかな。みずのなかをでんこうせっかではしるよ。"],
+      ["019","mature/glacies","グラキエス","ひょうがうおモンスター","みず・こおり","フィシュル","さかなをよくたべてレベル６になるとフィシュルからしんか","こおりのうみをおよぐさかな。うろこはこおりのようにとうめいでうつくしい。"],
+      ["020","mature/coral_guard","コーラルガルド","さんごまもりモンスター","みず・くさ","フィシュル","ブロッコリーをよくたべてレベル６になるとフィシュルからしんか","さんごしょうをまもるさかな。からだにさんごがそだってきれいだよ。"],
+      ["021","mature/angel_fin","エンゼルフィン","てんしうおモンスター","みず・ひかり","フィシュル","バランスよくたべてレベル６になるとフィシュルからしんか","てんしのはねをもつさかな。ひかりのなかをゆうがにおよぐすがたがうつくしい。"],
+      ["022","mature/burn_golem","バーンゴレム","ほのおゴーレムモンスター","いわ・ほのお","コロロン","りんごをよくたべてレベル６になるとコロロンからしんか","ほのおでもえるゴーレム。いわのからだからほのおがふきでているよ。"],
+      ["023","mature/pulse_rock","パルスロック","でんじいわモンスター","いわ・でんき","コロロン","にんじんをよくたべてレベル６になるとコロロンからしんか","でんきのパルスをはなついわ。からだにでんりゅうがながれているよ。"],
+      ["024","mature/splash_terra","スプラッシュテラ","みずだいちモンスター","いわ・みず","コロロン","さかなをよくたべてレベル６になるとコロロンからしんか","みずをあやつるいわのモンスター。おおきなみずのながれをつくりだすよ。"],
+      ["025","mature/forest_guard","フォレストガルド","もりまもりモンスター","いわ・くさ","コロロン","ブロッコリーをよくたべてレベル６になるとコロロンからしんか","もりをまもるいわのモンスター。からだにおおくのしょくぶつがそだっているよ。"],
+      ["026","mature/rune_golem","ルーンゴーレム","まほうゴーレムモンスター","いわ・ひかり","コロロン","バランスよくたべてレベル６になるとコロロンからしんか","まほうのルーンをきざんだゴーレム。こだいのちしきがからだにやどっているよ。"],
+      ["027","mature/flare_eterna","フレアエテルナ","えいえんのほのおモンスター","ひかり・ほのお","ルミナ","りんごをよくたべてレベル６になるとルミナからしんか","えいえんにもえるほのおをもつ。ひかりとほのおがひとつになったすがたよ。"],
+      ["028","mature/bolt_eterna","ボルトエテルナ","えいえんのでんきモンスター","ひかり・でんき","ルミナ","にんじんをよくたべてレベル６になるとルミナからしんか","えいえんのいなずまをはなつ。ひかりとでんきがひとつになったすがたよ。"],
+      ["029","mature/crystal_eterna","クリスタルエテルナ","えいえんのこおりモンスター","ひかり・こおり","ルミナ","さかなをよくたべてレベル６になるとルミナからしんか","えいえんにかがやくクリスタル。ひかりとこおりがひとつになったすがたよ。"],
+      ["030","mature/leaf_eterna","リーフエテルナ","えいえんのくさモンスター","ひかり・くさ","ルミナ","ブロッコリーをよくたべてレベル６になるとルミナからしんか","えいえんにしげるはっぱをもつ。ひかりとくさがひとつになったすがたよ。"],
+      ["031","mature/eterna","エテルナ","えいえんのひかりモンスター","ひかり","ルミナ","バランスよくたべてレベル６になるとルミナからしんか","えいえんのひかりそのもの。すべてのいのちをやさしくつつみこむよ。"],
+      ["032","final/prometheus","プロメテウス","しんかのほのおりゅうモンスター","ドラゴン・ほのお","フレアドラグ","レベル１０になるとフレアドラグからしんか","せかいにほのおをもたらしたりゅうのかみ。てんくうをとぶすがたはたいようのごとし。"],
+      ["033","final/indra_drag","インドラ・ドラグ","いかずちのかみりゅうモンスター","ドラゴン・でんき","ボルトドラグ","レベル１０になるとボルトドラグからしんか","いかずちのかみとよばれるりゅう。はなつでんきはてんをもつらぬくよ。"],
+      ["034","final/agniva","アグニヴァ","こおりとほのおのりゅうモンスター","ドラゴン・こおり","フロストドラグ","レベル１０になるとフロストドラグからしんか","こおりとほのおをあわせもつりゅう。ふたつのちからがきわだつすがたよ。"],
+      ["035","final/gaia_drag","ガイアドラグ","だいちりゅうモンスター","ドラゴン・いわ","マグマロック","レベル１０になるとマグマロックからしんか","だいちをしはいするりゅう。あしおとでだいちがふるえるほどのちからをもつよ。"],
+      ["036","final/sol_dragnir","ソル・ドラグニル","たいようりゅうモンスター","ドラゴン・ひかり","シャインドラグ","レベル１０になるとシャインドラグからしんか","たいようのちからをもつりゅうのかみ。すべてのひかりのみなもとといわれるよ。"],
+      ["037","final/ifrit_leo","イフリート・レオ","ほのおじしモンスター","ほのお・でんき","バーストガロ","レベル１０になるとバーストガロからしんか","ほのおのたてがみをもつじし。はなつほのおはせかいをてらすほどあかるいよ。"],
+      ["038","final/raiden_volf","ライデンヴォルフ","らいでんおおかみモンスター","でんき","ボルトガロ","レベル１０になるとボルトガロからしんか","らいでんをあやつるおおかみのかみ。はしるとらいめいがとどろくよ。"],
+      ["039","final/kelpie_volt","ケルピーヴォルト","みずでんきうまモンスター","でんき・みず","アクアガロ","レベル１０になるとアクアガロからしんか","みずとでんきをあやつるうまのかみ。うみのなみのようにはしるよ。"],
+      ["040","final/yggdra_beast","ユグドラビースト","せかいじゅうのけものモンスター","でんき・くさ","テラガロ","レベル１０になるとテラガロからしんか","せかいじゅうにやどるけもの。おおきなからだでだいちをまもるよ。"],
+      ["041","final/sirius_star","シリウス・スター","せいなるほしけものモンスター","でんき・ひかり","ホーリーガロ","レベル１０になるとホーリーガロからしんか","もっともあかるいほしのかみ。そのかがやきですべてをみちびくといわれるよ。"],
+      ["042","final/levia_burn","レヴィア・バーン","かいえんりゅうモンスター","みず・ほのお","スチームフィン","レベル１０になるとスチームフィンからしんか","うみとほのおをしはいするりゅうのかみ。うみのそこからほのおをはくよ。"],
+      ["043","final/thunder_kaiser","サンダーカイザー","かいめんのかみなりモンスター","みず・でんき","プラズマフィン","レベル１０になるとプラズマフィンからしんか","うみとかみなりをしはいするかみ。あらしのうみにかがやくよ。"],
+      ["044","final/poseidram","ポセイドラム","うみのかみモンスター","みず・こおり","グラキエス","レベル１０になるとグラキエスからしんか","すべてのうみをしはいするかみ。こおりのおうざにすわるすがたはいかめしいよ。"],
+      ["045","final/okeanos","オケアノス","いのちのうみモンスター","みず・くさ","コーラルガルド","レベル１０になるとコーラルガルドからしんか","いのちのうみをわたるかみ。おおくのいきものをやさしくはぐくむよ。"],
+      ["046","final/seraph_aqua","セラフィ・アクア","てんしのみずモンスター","みず・ひかり","エンゼルフィン","レベル１０になるとエンゼルフィンからしんか","てんしのひかりとうみをあわせもつかみ。きよらかなみずがかがやくよ。"],
+      ["047","final/titan_magma","タイタン・マグマ","マグマきょじんモンスター","いわ・ほのお","バーンゴレム","レベル１０になるとバーンゴレムからしんか","マグマでできたきょじんのかみ。からだのねつでだいちをとかすよ。"],
+      ["048","final/thor_terra","トール・テラ","だいちのかみなりモンスター","いわ・でんき","パルスロック","レベル１０になるとパルスロックからしんか","だいちにかみなりをよぶかみ。おおきなつちをふりあげるすがたはおそろしいよ。"],
+      ["049","final/neptune_rock","ネプチュン・ロック","うみのいわかみモンスター","いわ・みず","スプラッシュテラ","レベル１０になるとスプラッシュテラからしんか","うみといわをしはいするかみ。おおきなさんごのかんむりがいかめしいよ。"],
+      ["050","final/yggdrasil","ユグドラシル","せかいじゅうのかみモンスター","いわ・くさ","フォレストガルド","レベル１０になるとフォレストガルドからしんか","せかいのちゅうしんにたつせかいじゅうのかみ。そのねはだいちのはてまでとどくよ。"],
+      ["051","final/chronos_terra","クロノス・テラ","ときのだいちかみモンスター","いわ・ひかり","ルーンゴーレム","レベル１０になるとルーンゴーレムからしんか","ときとだいちをつかさどるかみ。こだいのちしきでだいちをみちびくよ。"],
+      ["052","final/phoenix","フェニックス","えいえんのほのおとりモンスター","ひかり・ほのお","フレアエテルナ","レベル１０になるとフレアエテルナからしんか","えいえんにうまれかわるほのおのとり。そのはねからひかりがまいおちるよ。"],
+      ["053","final/astral_rai","アストラル・ライ","ほしのいなずまかみモンスター","ひかり・でんき","ボルトエテルナ","レベル１０になるとボルトエテルナからしんか","ほしぞらのいなずまをあやつるかみ。よるぞらをかがやかせるよ。"],
+      ["054","final/diamond_halo","ダイアモンド・ハロー","ひかりこおりのかみモンスター","ひかり・こおり","クリスタルエテルナ","レベル１０になるとクリスタルエテルナからしんか","ダイアモンドのようなひかりをはなすかみ。そのかがやきはすべてをうつしだすよ。"],
+      ["055","final/eden_spirit","エデン・スピリット","えいえんのにわのかみモンスター","ひかり・くさ","リーフエテルナ","レベル１０になるとリーフエテルナからしんか","えいえんのにわをまもるかみ。やさしいひかりですべてのいのちをそだてるよ。"],
+      ["056","final/zeus_omega","ゼウス・オメガ","すべてのかみモンスター","ひかり","エテルナ","レベル１０になるとエテルナからしんか","すべてのかみをこえたきゅうきょくのそんざい。そのちからはむげんたいよ。"],
+    ];
+    const ENCYCLOPEDIA = ENC_RAW.map(([no,key,name,kind,type,prevEvo,cond,desc]) => ({no,key,name,kind,type,prevEvo,cond,desc}));
+
+    const encyclopediaPanelEl = document.getElementById("encyclopediaPanel");
+    const encGridEl = document.getElementById("encGrid");
+    const encDetailEl = document.getElementById("encDetail");
+
+    let encAnimTimer = null;
+    let encSelectedIdx = -1;
+
+    function stopEncAnim() {
+      if (encAnimTimer) { clearInterval(encAnimTimer); encAnimTimer = null; }
+    }
+
+    function startEncAnim(key) {
+      stopEncAnim();
+      const imgEl = document.getElementById("encAnimImg");
+      if (!imgEl) return;
+      const base = `/static/monsters/${key}/idle/`;
+      const seq = [1, 2, 3, 2];
+      let idx = 0;
+      function loadFrame() {
+        const el = document.getElementById("encAnimImg");
+        if (!el) return;
+        el.src = `${base}frame${seq[idx]}.png`;
+      }
+      loadFrame();
+      encAnimTimer = setInterval(() => {
+        idx = (idx + 1) % seq.length;
+        loadFrame();
+      }, 420);
+    }
+
+    function renderEncDetail(index) {
+      const mon = ENCYCLOPEDIA[index];
+      const obtained = obtainedMonsters.has(mon.key);
+      stopEncAnim();
+      if (!obtained) {
+        encDetailEl.innerHTML = `
+          <div>
+            <div class="enc-detail-no">No.${mon.no}</div>
+            <div class="enc-detail-name" style="color:#3a5a7a;text-shadow:none">???</div>
+            <div class="enc-not-found">まだであっていないよ。<br>しんかすると図鑑にとうろくされるよ！</div>
+          </div>`;
+        return;
+      }
+      const stage = mon.key.split("/")[0];
+      const STAGE_LABELS = {baby:"ベビー",child:"こども",mature:"せいじゅく",final:"かんぜんたい"};
+      const STAGE_ORDER = ["baby","child","mature","final"];
+      const STAGE_DOT_SIZES = {baby:"8px",child:"14px",mature:"20px",final:"26px"};
+      const scaleHtml = STAGE_ORDER.map(s => `
+        <div class="enc-scale-step${s===stage?" active":""}">
+          <div class="enc-scale-dot" style="width:${STAGE_DOT_SIZES[s]};height:${STAGE_DOT_SIZES[s]}"></div>
+          <span class="enc-scale-lbl">${STAGE_LABELS[s]}</span>
+        </div>`).join("");
+      encDetailEl.innerHTML = `
+        <div>
+          <div class="enc-detail-no">No.${mon.no}</div>
+          <div class="enc-detail-name">${mon.name}</div>
+          <div class="enc-anim-wrap" data-stage="${stage}">
+            <img id="encAnimImg" class="enc-anim-img" src="/static/monsters/${mon.key}/idle/frame1.png" alt="${mon.name}"
+              onerror="this.style.opacity='0.15'">
+            <span class="enc-stage-badge">${STAGE_LABELS[stage] || stage}</span>
+          </div>
+          <div class="enc-scale">${scaleHtml}</div>
+          <table class="enc-detail-table">
+            <tr><td>種類</td><td>${mon.kind}</td></tr>
+            <tr><td>タイプ</td><td>${mon.type}</td></tr>
+            <tr><td>進化前</td><td>${mon.prevEvo}</td></tr>
+            <tr><td>進化条件</td><td>${mon.cond}</td></tr>
+            <tr><td>説明</td><td>${mon.desc}</td></tr>
+          </table>
+        </div>`;
+      startEncAnim(mon.key);
+    }
+
+    function renderEncGrid() {
+      encGridEl.innerHTML = "";
+      ENCYCLOPEDIA.forEach((mon, idx) => {
+        const obtained = obtainedMonsters.has(mon.key);
+        const card = document.createElement("div");
+        card.className = "enc-card" + (idx === encSelectedIdx ? " selected" : "") + (obtained ? "" : " unknown");
+        card.innerHTML = `
+          <span class="enc-card-no">${mon.no}</span>
+          <div class="enc-card-img-wrap">
+            ${obtained
+              ? `<img class="enc-card-img" src="/static/monsters/${mon.key}/idle/frame1.png" alt="${mon.name}" onerror="this.style.opacity='0.1'">`
+              : `<span class="enc-card-unknown-icon">?</span>`}
+          </div>
+          <span class="enc-card-name">${obtained ? mon.name : "???"}</span>`;
+        card.addEventListener("click", () => {
+          encSelectedIdx = idx;
+          document.querySelectorAll(".enc-card").forEach((c, i) => c.classList.toggle("selected", i === idx));
+          renderEncDetail(idx);
+        });
+        encGridEl.appendChild(card);
+      });
+    }
+
+    function openEncyclopedia() {
+      menuPanelEl.classList.remove("open");
+      encyclopediaPanelEl.classList.add("open");
+      encSelectedIdx = -1;
+      encDetailEl.innerHTML = '<div class="enc-empty">モンスターをえらんでね</div>';
+      renderEncGrid();
+    }
+
+    function closeEncyclopedia() {
+      stopEncAnim();
+      encyclopediaPanelEl.classList.remove("open");
+    }
+
+    document.getElementById("openEncyclopedia").addEventListener("click", openEncyclopedia);
+    document.getElementById("encClose").addEventListener("click", closeEncyclopedia);
+  </script>
 </body>
 </html>

@@ -1,0 +1,14 @@
+{
+  "name": "mogumogumonster",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Gemini browser automation helpers for MoguMoguMonster assets",
+  "scripts": {
+    "gemini:open": "node scripts/gemini_generate.js --open-only",
+    "gemini:generate": "node scripts/gemini_generate.js",
+    "gemini:attach": "node scripts/gemini_attach.js"
+  },
+  "dependencies": {
+    "playwright": "^1.54.2"
+  }
+}
