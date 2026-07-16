@@ -1,6 +1,6 @@
 ﻿# MoguMoguMonster launch script
+# MoguMoguMonster is now a static site (no backend) - this just serves ./public locally.
 param(
-    [string]$ServerHost = "0.0.0.0",
     [int]$Port = 8000
 )
 
@@ -17,4 +17,4 @@ Write-Host "Stop: Ctrl+C"
 Write-Host ""
 
 Set-Location $PSScriptRoot
-python src\app.py --host $ServerHost --port $Port
+python -m http.server $Port --directory public

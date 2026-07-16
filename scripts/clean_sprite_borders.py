@@ -4,10 +4,10 @@ from PIL import Image
 
 
 TARGETS = [
-    Path("static/monsters/momo/eat/frame2.png"),
-    Path("static/monsters/momo/eat/frame3.png"),
-    Path("static/monsters/momo/evolve/frame2.png"),
-    Path("static/monsters/momo/idle/frame2.png"),
+    Path("public/static/monsters/momo/eat/frame2.png"),
+    Path("public/static/monsters/momo/eat/frame3.png"),
+    Path("public/static/monsters/momo/evolve/frame2.png"),
+    Path("public/static/monsters/momo/idle/frame2.png"),
 ]
 
 

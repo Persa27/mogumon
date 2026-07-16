@@ -120,14 +120,14 @@ def main() -> None:
     print("Done. Next steps:")
     print("  1. Run Gemini: node scripts/gemini_attach_with_reference.js \\")
     print(f"       --reference-file {OUT_PATH} \\")
-    print(f"       --prompt-file static/monsters/child/garoron/gemini_prompt.txt \\")
-    print(f"       --output-file static/monsters/child/garoron/sheet.png")
+    print(f"       --prompt-file public/static/monsters/child/garoron/gemini_prompt.txt \\")
+    print(f"       --output-file public/static/monsters/child/garoron/sheet.png")
     print("  2. Remove background: node scripts/browser_remove_background.js \\")
-    print(f"       --input static/monsters/child/garoron/sheet.png \\")
-    print(f"       --output static/monsters/child/garoron/sheet_transparent.png")
+    print(f"       --input public/static/monsters/child/garoron/sheet.png \\")
+    print(f"       --output public/static/monsters/child/garoron/sheet_transparent.png")
     print("  3. Split frames: python scripts/process_animation_sheet.py \\")
-    print(f"       --sheet static/monsters/child/garoron/sheet_transparent.png \\")
-    print(f"       --outdir static/monsters/child/garoron")
+    print(f"       --sheet public/static/monsters/child/garoron/sheet_transparent.png \\")
+    print(f"       --outdir public/static/monsters/child/garoron")
 
 
 if __name__ == "__main__":

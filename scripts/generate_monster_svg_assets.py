@@ -42,7 +42,7 @@ def render_svg(c: dict, state: str) -> str:
 
 def main() -> int:
     for name, colors in MONSTERS.items():
-        root = Path("static/monsters") / name
+        root = Path("public/static/monsters") / name
         for state in ["idle", "eat", "evolve"]:
             out = root / state / "frame1.svg"
             out.parent.mkdir(parents=True, exist_ok=True)
