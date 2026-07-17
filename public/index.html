@@ -1202,6 +1202,8 @@
     }
 
     function reloadMonster() {
+      const confirmed = window.confirm("いまのモンスターのせいちょうきろくがきえます。新しいモンスターにしますか？");
+      if (!confirmed) return;
       const preservedObtained = (monsterState && Array.isArray(monsterState.obtainedMonsters))
         ? monsterState.obtainedMonsters.slice()
         : ["baby/baby"];
