@@ -168,6 +168,21 @@
       cursor:pointer;
       justify-content:center;
       flex:0 0 auto;
+      width:34px;
+      padding:0;
+    }
+    .hamburger-icon{
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      width:18px;
+      height:13px;
+    }
+    .hamburger-icon span{
+      display:block;
+      height:2px;
+      border-radius:1px;
+      background:var(--border);
     }
     .hud-eat{
       flex:1 1 0;
@@ -770,7 +785,9 @@
       <div class="hud-box">なまえ：<strong id="monsterName">モモ</strong></div>
       <div class="hud-box">レベル：<strong id="levelValue">1</strong><div class="level-meter"><div class="level-fill" id="levelFill"></div></div></div>
       <div class="hud-box hud-eat">たべたかいすう：<strong id="eatCount">0</strong></div>
-      <button class="menu-button" id="menuToggle">メニュー</button>
+      <button class="menu-button" id="menuToggle" aria-label="メニュー">
+        <span class="hamburger-icon"><span></span><span></span><span></span></span>
+      </button>
     </header>
 
     <section class="stage" id="stage">
