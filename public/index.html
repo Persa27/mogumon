@@ -876,6 +876,29 @@
     let pendingEvolutionMonster = null;
     let obtainedMonsters = new Set(["baby/baby"]);
 
+    // ---- Audio (BGM) ----
+    const bgmAudio = new Audio("/static/audio/bgm.mp3");
+    bgmAudio.loop = true;
+    bgmAudio.volume = 0.5;
+    let bgmStarted = false;
+
+    function startBgmOnce() {
+      if (bgmStarted) return;
+      bgmStarted = true;
+      bgmAudio.play().catch(() => {
+        // Autoplay may still be blocked; it will retry on the next interaction.
+        bgmStarted = false;
+      });
+    }
+    document.addEventListener("pointerdown", startBgmOnce, { once: true });
+
+    // ---- Audio (SFX) ----
+    function playSfx(path) {
+      if (!sfxEnabled) return;
+      const sfx = new Audio(path);
+      sfx.play().catch(() => {});
+    }
+
     function getSceneFrames(assetFamily, scene) {
       return [1, 2, 3].map((n) => `/static/monsters/${assetFamily}/${scene}/frame${n}.png`);
     }
@@ -1024,6 +1047,7 @@
         button.className = `food-card${food.key === selectedFood ? " active" : ""}`;
         button.innerHTML = `<img src="${food.asset}" alt="${food.label}"><span>${food.label}</span>`;
         button.addEventListener("click", () => {
+          playSfx("/static/audio/sfx_food_select.mp3");
           selectedFood = food.key;
           setFoodOverlay();
           renderFoodButtons();
@@ -1084,6 +1108,7 @@
 
     async function runEvolutionScene(durationMs = 1800) {
       const fromMonster = currentMonster;
+      if (!bgmAudio.paused) bgmAudio.pause();
       setEvolutionMode(true);
       stopAnimation();
       const toMonster = pendingEvolutionMonster || currentMonster;
@@ -1120,6 +1145,7 @@
       setEvolutionMode(false);
       pendingEvolutionMonster = null;
       monsterEl.style.opacity = "1";
+      if (bgmStarted) bgmAudio.play().catch(() => {});
       playScene("idle");
     }
 
@@ -1172,6 +1198,7 @@
         return;
       }
 
+      playSfx("/static/audio/sfx_eat.mp3");
       setTapButtonDisabled(true);
       window.setTimeout(() => setTapButtonDisabled(false), MonsterEngine.COMBO_TOO_FAST_SECONDS * 1000);
       lastTapAt = now;
@@ -1188,6 +1215,7 @@
       MonsterEngine.saveState(monsterState);
 
       if (evolved) {
+        playSfx("/static/audio/sfx_evolve.mp3");
         pendingEvolutionMonster = MonsterEngine.assetFamily(monsterState);
         currentMonster = previousMonster;
         (async () => {
