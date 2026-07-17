@@ -808,6 +808,8 @@
       <div class="menu-actions">
         <button id="openEncyclopedia">モンスター図鑑をみる</button>
         <button id="reloadMonster">新しいモンスターにする</button>
+        <button id="sfxToggle">効果音：<span id="sfxToggleLabel">ON</span></button>
+        <button id="closeMenu">メニューを閉じる</button>
       </div>
     </aside>
 
@@ -870,6 +872,7 @@
     let comboSecondsRemaining = 0;
     let comboCountdownTimer = null;
     let evolutionMode = false;
+    let sfxEnabled = true;
     let pendingEvolutionMonster = null;
     let obtainedMonsters = new Set(["baby/baby"]);
 
@@ -1212,15 +1215,27 @@
       menuPanelEl.classList.remove("open");
     }
 
+    function updateSfxToggleLabel() {
+      document.getElementById("sfxToggleLabel").textContent = sfxEnabled ? "ON" : "OFF";
+    }
+
     document.getElementById("menuToggle").addEventListener("click", () => {
       menuPanelEl.classList.toggle("open");
     });
     document.getElementById("reloadMonster").addEventListener("click", reloadMonster);
+    document.getElementById("sfxToggle").addEventListener("click", () => {
+      sfxEnabled = !sfxEnabled;
+      updateSfxToggleLabel();
+    });
+    document.getElementById("closeMenu").addEventListener("click", () => {
+      menuPanelEl.classList.remove("open");
+    });
     tapButtonEl.addEventListener("click", tapMeal);
 
     window.addEventListener("load", () => {
       renderFoodButtons();
       setFoodOverlay();
+      updateSfxToggleLabel();
       initGame();
     });
 
