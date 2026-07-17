@@ -30,3 +30,9 @@ All tracks below are sourced from freesound.org. None require attribution
 - **Author:** Kastenfrosch
 - **Source:** https://freesound.org/people/Kastenfrosch/sounds/162458/
 - **License:** CC0 1.0 (Public Domain)
+
+- **File:** `sfx_hall_of_fame.wav`
+- **Sound:** "Achievement Happy Beeps Jingle" (~1.9s after trimming trailing silence with ffmpeg; a distinct cue from the evolve fanfare, played when a monster is graduated into the Hall of Fame)
+- **Author:** CogFireStudios
+- **Source:** https://freesound.org/people/CogFireStudios/sounds/619838/
+- **License:** CC0 1.0 (Public Domain)

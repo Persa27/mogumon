@@ -402,6 +402,8 @@
       filter:drop-shadow(0 14px 20px rgba(14,41,66,.18));
       transform-origin:center bottom;
       transition:width .4s ease, max-width .4s ease;
+      -webkit-touch-callout:none;
+      user-select:none;
     }
     .monster[data-stage="child"] {width:min(43vw,190px);max-width:190px}
     .monster[data-stage="mature"]{width:min(48vw,225px);max-width:225px}
@@ -829,6 +831,8 @@
       width:min(46vw, 200px);
       max-width:200px;
       filter:drop-shadow(0 10px 20px rgba(0,0,0,.4));
+      -webkit-touch-callout:none;
+      user-select:none;
     }
     .result-stats{
       display:grid;
@@ -912,6 +916,7 @@
       cursor:pointer;
       touch-action:none;
       user-select:none;
+      -webkit-touch-callout:none;
       overflow:hidden;
     }
     .longpress-ring{
@@ -1109,6 +1114,7 @@
 
     <div class="full-panel" id="graduationConfirmPanel">
       <h2>ながおしで<br>おわかれの あいさつをしよう</h2>
+      <img id="graduationConfirmBodyShot" class="result-body-shot" src="/static/monsters/baby/baby/idle/frame1.png" alt="" />
       <div class="longpress-btn" id="longpressButton">
         <div class="longpress-ring" id="longpressRing"></div>
         <span>ながおし</span>
@@ -1118,6 +1124,7 @@
 
     <div class="full-panel" id="graduationCelebratePanel">
       <h2>🏆 でんどう入り！ 🏆</h2>
+      <img id="graduationCelebrateBodyShot" class="result-body-shot" src="/static/monsters/baby/baby/idle/frame1.png" alt="" />
       <p id="graduationCelebrateBody"></p>
       <button class="close-btn" id="graduationCelebrateCloseButton">あたらしい こに あう</button>
     </div>
@@ -1141,7 +1148,17 @@
     ];
     const COMBO_CONTINUE_SECONDS = 30;
 
+    // Long-pressing an <img> triggers the browser's native "open/save image"
+    // menu regardless of what's stacked on top of it. The monster is an
+    // <img> under the ながおし button, so block that menu on every monster
+    // shot in the game.
+    function disableImageContextMenu(img) {
+      img.draggable = false;
+      img.addEventListener("contextmenu", (event) => event.preventDefault());
+    }
+
     const monsterEl = document.getElementById("monster");
+    disableImageContextMenu(monsterEl);
     const monsterScaleWrapEl = document.getElementById("monsterScaleWrap");
     const appShellEl = document.getElementById("appShell");
     const evolutionShadowEl = document.getElementById("evolutionShadow");
@@ -1166,6 +1183,7 @@
     // ---- Phase6: リザルト / 卒業 / 殿堂 の要素 ----
     const resultPanelEl = document.getElementById("resultPanel");
     const resultBodyShotEl = document.getElementById("resultBodyShot");
+    disableImageContextMenu(resultBodyShotEl);
     const resultEatCountEl = document.getElementById("resultEatCount");
     const resultPointsEl = document.getElementById("resultPoints");
     const resultMaxComboEl = document.getElementById("resultMaxCombo");
@@ -1182,10 +1200,14 @@
     const chooseContinueButtonEl = document.getElementById("chooseContinueButton");
 
     const graduationConfirmPanelEl = document.getElementById("graduationConfirmPanel");
+    const graduationConfirmBodyShotEl = document.getElementById("graduationConfirmBodyShot");
+    disableImageContextMenu(graduationConfirmBodyShotEl);
     const longpressButtonEl = document.getElementById("longpressButton");
     const longpressRingEl = document.getElementById("longpressRing");
 
     const graduationCelebratePanelEl = document.getElementById("graduationCelebratePanel");
+    const graduationCelebrateBodyShotEl = document.getElementById("graduationCelebrateBodyShot");
+    disableImageContextMenu(graduationCelebrateBodyShotEl);
     const graduationCelebrateBodyEl = document.getElementById("graduationCelebrateBody");
 
     const hallOfFamePanelEl = document.getElementById("hallOfFamePanel");
@@ -1237,7 +1259,7 @@
     const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
     const audioCtx = AudioContextCtor ? new AudioContextCtor() : null;
     const sfxBuffers = {};
-    const sfxPaths = ["/static/audio/sfx_food_select.wav", "/static/audio/sfx_eat.wav", "/static/audio/sfx_evolve.mp3"];
+    const sfxPaths = ["/static/audio/sfx_food_select.wav", "/static/audio/sfx_eat.wav", "/static/audio/sfx_evolve.mp3", "/static/audio/sfx_hall_of_fame.wav"];
     if (audioCtx) {
       document.addEventListener("pointerdown", () => {
         if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
@@ -1806,6 +1828,8 @@
 
     function openGraduationConfirmPanel() {
       resetLongpressRing();
+      graduationConfirmBodyShotEl.src = `/static/monsters/${currentMonster}/idle/frame1.png`;
+      bgmAudio.pause();
       graduationConfirmPanelEl.classList.add("open");
     }
 
@@ -1833,6 +1857,7 @@
       longpressRAF = window.requestAnimationFrame(stepLongpress);
     }
 
+    longpressButtonEl.addEventListener("contextmenu", (event) => event.preventDefault());
     longpressButtonEl.addEventListener("pointerdown", (event) => {
       event.preventDefault();
       longpressStartedAt = 0;
@@ -1844,6 +1869,7 @@
     document.getElementById("graduationConfirmCancel").addEventListener("click", () => {
       cancelLongpress();
       graduationConfirmPanelEl.classList.remove("open");
+      tryStartBgm();
     });
 
     function performGraduation() {
@@ -1866,6 +1892,9 @@
       graduationCelebrateBodyEl.textContent = last
         ? `${last.displayName}が でんどうに かざられたよ。さいしゅうレベル ${last.finalLevel}／おおきさ ${MonsterEngine.formatSize(last.sizeMeters)}`
         : "";
+      graduationCelebrateBodyShotEl.src = `/static/monsters/${last ? last.monsterKey : currentMonster}/idle/frame1.png`;
+      bgmAudio.pause();
+      playSfx("/static/audio/sfx_hall_of_fame.wav");
       graduationCelebratePanelEl.classList.add("open");
     }
 
@@ -1874,6 +1903,7 @@
       resetSessionCounters();
       updateHudFromState();
       playScene("idle");
+      tryStartBgm();
     });
 
     function undoGraduation() {
