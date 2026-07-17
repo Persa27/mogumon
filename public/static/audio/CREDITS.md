@@ -13,14 +13,14 @@ All tracks below are sourced from freesound.org. None require attribution
 
 ## Sound effects
 
-- **File:** `sfx_food_select.mp3`
-- **Sound:** "Cartoon Pop" (~0.14s; leading/trailing silence trimmed with ffmpeg)
+- **File:** `sfx_food_select.wav`
+- **Sound:** "Cartoon Pop" (~0.1s; leading/trailing silence trimmed with ffmpeg; kept as WAV instead of MP3 so the LAME encoder's ~20-40ms priming-silence delay doesn't add perceptible lag before this very short tap sound)
 - **Author:** Mish7913
 - **Source:** https://freesound.org/people/Mish7913/sounds/741368/
 - **License:** CC0 1.0 (Public Domain)
 
-- **File:** `sfx_eat.mp3`
-- **Sound:** "Bite (Cartoon Style)" (~0.24s; leading/trailing silence trimmed with ffmpeg)
+- **File:** `sfx_eat.wav`
+- **Sound:** "Bite (Cartoon Style)" (~0.2s; leading/trailing silence trimmed with ffmpeg; kept as WAV for the same reason as `sfx_food_select.wav`)
 - **Author:** Jofae
 - **Source:** https://freesound.org/people/Jofae/sounds/353067/
 - **License:** CC0 1.0 (Public Domain)

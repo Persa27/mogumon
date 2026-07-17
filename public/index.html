@@ -1232,7 +1232,7 @@
     // Preload each effect once so playback starts instantly instead of
     // waiting for a network fetch on every tap.
     const sfxCache = {};
-    for (const path of ["/static/audio/sfx_food_select.mp3", "/static/audio/sfx_eat.mp3", "/static/audio/sfx_evolve.mp3"]) {
+    for (const path of ["/static/audio/sfx_food_select.wav", "/static/audio/sfx_eat.wav", "/static/audio/sfx_evolve.mp3"]) {
       const audio = new Audio(path);
       audio.preload = "auto";
       sfxCache[path] = audio;
@@ -1421,7 +1421,7 @@
         button.className = `food-card${food.key === selectedFood ? " active" : ""}`;
         button.innerHTML = `<img src="${food.asset}" alt="${food.label}"><span>${food.label}</span>`;
         button.addEventListener("click", () => {
-          playSfx("/static/audio/sfx_food_select.mp3");
+          playSfx("/static/audio/sfx_food_select.wav");
           selectedFood = food.key;
           setFoodOverlay();
           renderFoodButtons();
@@ -1626,7 +1626,7 @@
         return;
       }
 
-      playSfx("/static/audio/sfx_eat.mp3");
+      playSfx("/static/audio/sfx_eat.wav");
       setTapButtonDisabled(true);
       window.setTimeout(() => setTapButtonDisabled(false), MonsterEngine.COMBO_TOO_FAST_SECONDS * 1000);
       lastTapAt = now;
