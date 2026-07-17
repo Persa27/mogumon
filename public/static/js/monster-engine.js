@@ -22,6 +22,11 @@
   var SECOND_EVOLUTION_LEVEL = 10;
   var FOOD_PRIORITY = ["apple", "carrot", "fish", "broccoli"];
 
+  // ---- Phase 6: Lv10+ "post-graduation" growth (see docs/phase6/post-lv10-design-v1.md) ----
+  var GRADUATION_MIN_LEVEL = 10;
+  var GRADUATION_PROMPT_INTERVAL = 5;
+  var SCALE_CAP = 50;
+
   var CHILD_BY_FOOD = {
     apple: "draup",
     carrot: "garoron",
@@ -257,6 +262,72 @@
     return value;
   }
 
+  // ---- Phase 6: Lv10+ sizing / graduation helpers ----
+
+  function sizeForLevel(level) {
+    if (typeof level !== "number" || level < GRADUATION_MIN_LEVEL) return null;
+    return 2.0 * Math.pow(1.2, level - GRADUATION_MIN_LEVEL);
+  }
+
+  function formatSize(meters) {
+    if (typeof meters !== "number" || isNaN(meters)) return "";
+    if (meters >= 1000) {
+      return (meters / 1000).toFixed(1) + "km";
+    }
+    return meters.toFixed(1) + "m";
+  }
+
+  function cssScaleForLevel(level) {
+    if (typeof level !== "number" || level <= GRADUATION_MIN_LEVEL) return 1;
+    return Math.min(SCALE_CAP, Math.pow(1.15, level - GRADUATION_MIN_LEVEL));
+  }
+
+  function canGraduate(state) {
+    return !!state && state.evolutionStage === 3 && state.level >= GRADUATION_MIN_LEVEL;
+  }
+
+  // Highest "prompt-worthy" level threshold reached so far: 10, then every
+  // GRADUATION_PROMPT_INTERVAL levels after that (15, 20, 25, ...).
+  function graduationThresholdForLevel(level) {
+    if (typeof level !== "number" || level < GRADUATION_MIN_LEVEL) return null;
+    var steps = Math.floor((level - GRADUATION_MIN_LEVEL) / GRADUATION_PROMPT_INTERVAL);
+    return GRADUATION_MIN_LEVEL + steps * GRADUATION_PROMPT_INTERVAL;
+  }
+
+  function shouldShowGraduationPrompt(state) {
+    if (!canGraduate(state)) return false;
+    var threshold = graduationThresholdForLevel(state.level);
+    if (threshold === null) return false;
+    var lastPrompted = typeof state.lastGraduationPromptLevel === "number" ? state.lastGraduationPromptLevel : 0;
+    return threshold > lastPrompted;
+  }
+
+  function markGraduationPrompted(state) {
+    var next = cloneState(state);
+    var threshold = graduationThresholdForLevel(state.level);
+    if (threshold !== null) {
+      next.lastGraduationPromptLevel = threshold;
+    }
+    return next;
+  }
+
+  function graduate(state, now) {
+    var record = {
+      monsterKey: assetFamily(state),
+      displayName: displayName(state),
+      finalLevel: state.level,
+      sizeMeters: sizeForLevel(state.level),
+      eatCount: typeof state.lifetimeEatCount === "number" ? state.lifetimeEatCount : 0,
+      graduatedAt: toMillis(now === undefined ? Date.now() : now)
+    };
+
+    var next = createInitialMonsterState();
+    next.obtainedMonsters = state.obtainedMonsters ? state.obtainedMonsters.slice() : next.obtainedMonsters;
+    next.hallOfFame = (Array.isArray(state.hallOfFame) ? state.hallOfFame.slice() : []).concat([record]);
+
+    return next;
+  }
+
   function evaluateTap(options) {
     var lastTapAt = toMillis(options.lastTapAt);
     var previousCombo = options.comboCount || 0;
@@ -311,7 +382,10 @@
       stageFoodCounts: freshFoodCounts(),
       stageRecentFoods: [],
       lastEvolutionLevel: 0,
-      obtainedMonsters: ["baby/baby"]
+      obtainedMonsters: ["baby/baby"],
+      lifetimeEatCount: 0,
+      hallOfFame: [],
+      lastGraduationPromptLevel: 0
     };
   }
 
@@ -331,7 +405,10 @@
       },
       stageRecentFoods: state.stageRecentFoods.slice(),
       lastEvolutionLevel: state.lastEvolutionLevel,
-      obtainedMonsters: state.obtainedMonsters.slice()
+      obtainedMonsters: state.obtainedMonsters.slice(),
+      lifetimeEatCount: typeof state.lifetimeEatCount === "number" ? state.lifetimeEatCount : 0,
+      hallOfFame: Array.isArray(state.hallOfFame) ? state.hallOfFame.slice() : [],
+      lastGraduationPromptLevel: typeof state.lastGraduationPromptLevel === "number" ? state.lastGraduationPromptLevel : 0
     };
   }
 
@@ -341,6 +418,7 @@
 
     next.growthPoints += grantedPoints;
     next.level = levelFromPoints(next.growthPoints);
+    next.lifetimeEatCount = (typeof next.lifetimeEatCount === "number" ? next.lifetimeEatCount : 0) + 1;
 
     recordFoodChoice(next, foodType);
 
@@ -382,7 +460,12 @@
       lastEvolutionLevel: typeof raw.lastEvolutionLevel === "number" ? raw.lastEvolutionLevel : initial.lastEvolutionLevel,
       obtainedMonsters: Array.isArray(raw.obtainedMonsters) && raw.obtainedMonsters.length > 0
         ? raw.obtainedMonsters.slice()
-        : initial.obtainedMonsters.slice()
+        : initial.obtainedMonsters.slice(),
+      lifetimeEatCount: typeof raw.lifetimeEatCount === "number" ? raw.lifetimeEatCount : initial.lifetimeEatCount,
+      hallOfFame: Array.isArray(raw.hallOfFame) ? raw.hallOfFame.slice() : initial.hallOfFame.slice(),
+      lastGraduationPromptLevel: typeof raw.lastGraduationPromptLevel === "number"
+        ? raw.lastGraduationPromptLevel
+        : initial.lastGraduationPromptLevel
     };
 
     if (raw.stageFoodCounts && typeof raw.stageFoodCounts === "object") {
@@ -421,6 +504,9 @@
     FIRST_EVOLUTION_LEVEL: FIRST_EVOLUTION_LEVEL,
     SECOND_EVOLUTION_LEVEL: SECOND_EVOLUTION_LEVEL,
     FOOD_PRIORITY: FOOD_PRIORITY,
+    GRADUATION_MIN_LEVEL: GRADUATION_MIN_LEVEL,
+    GRADUATION_PROMPT_INTERVAL: GRADUATION_PROMPT_INTERVAL,
+    SCALE_CAP: SCALE_CAP,
     CHILD_BY_FOOD: CHILD_BY_FOOD,
     MATURE_BY_FOODS: MATURE_BY_FOODS,
     FINAL_BY_FOODS: FINAL_BY_FOODS,
@@ -444,7 +530,16 @@
     assetFamily: assetFamily,
     displayName: displayName,
     loadState: loadState,
-    saveState: saveState
+    saveState: saveState,
+
+    sizeForLevel: sizeForLevel,
+    formatSize: formatSize,
+    cssScaleForLevel: cssScaleForLevel,
+    canGraduate: canGraduate,
+    graduationThresholdForLevel: graduationThresholdForLevel,
+    shouldShowGraduationPrompt: shouldShowGraduationPrompt,
+    markGraduationPrompted: markGraduationPrompted,
+    graduate: graduate
   };
 
   if (typeof module !== "undefined" && module.exports) {

@@ -280,7 +280,10 @@ test("createInitialMonsterState returns the documented fresh baby shape", () => 
     stageFoodCounts: { apple: 0, carrot: 0, fish: 0, broccoli: 0 },
     stageRecentFoods: [],
     lastEvolutionLevel: 0,
-    obtainedMonsters: ["baby/baby"]
+    obtainedMonsters: ["baby/baby"],
+    lifetimeEatCount: 0,
+    hallOfFame: [],
+    lastGraduationPromptLevel: 0
   });
 });
 
@@ -347,5 +350,215 @@ test("loadState normalizes a partial/legacy saved object without crashing", () =
   assert.equal(state.growthPoints, 200);
   assert.deepEqual(state.stageFoodCounts, { apple: 0, carrot: 0, fish: 0, broccoli: 0 });
   assert.deepEqual(state.obtainedMonsters, ["baby/baby"]);
+  assert.equal(state.lifetimeEatCount, 0);
+  assert.deepEqual(state.hallOfFame, []);
+  assert.equal(state.lastGraduationPromptLevel, 0);
   delete global.localStorage;
+});
+
+// ---------------------------------------------------------------------------
+// normalizeMonsterState backward compatibility for Phase 6 fields
+// ---------------------------------------------------------------------------
+
+test("normalizeMonsterState backfills lifetimeEatCount/hallOfFame/lastGraduationPromptLevel for legacy saves", () => {
+  global.localStorage = {
+    store: {},
+    getItem() {
+      // Legacy saved shape from before Phase 6 — none of the new fields exist.
+      return JSON.stringify({
+        level: 12,
+        growthPoints: 5000,
+        evolutionStage: 3,
+        evolutionType: "prometheus",
+        baseFood: "apple",
+        evolutionFoodFamily: "apple",
+        stageFoodCounts: { apple: 3, carrot: 0, fish: 0, broccoli: 0 },
+        stageRecentFoods: ["apple"],
+        lastEvolutionLevel: 10,
+        obtainedMonsters: ["baby/baby", "child/draup", "mature/flare_drag", "final/prometheus"]
+      });
+    },
+    setItem() {}
+  };
+  const state = MonsterEngine.loadState();
+  assert.equal(state.level, 12);
+  assert.equal(state.lifetimeEatCount, 0);
+  assert.deepEqual(state.hallOfFame, []);
+  assert.equal(state.lastGraduationPromptLevel, 0);
+  delete global.localStorage;
+});
+
+test("normalizeMonsterState preserves existing Phase 6 fields when already present", () => {
+  const raw = {
+    level: 20,
+    growthPoints: 9000,
+    evolutionStage: 3,
+    evolutionType: "prometheus",
+    baseFood: "apple",
+    evolutionFoodFamily: "apple",
+    stageFoodCounts: { apple: 1, carrot: 0, fish: 0, broccoli: 0 },
+    stageRecentFoods: ["apple"],
+    lastEvolutionLevel: 10,
+    obtainedMonsters: ["baby/baby"],
+    lifetimeEatCount: 42,
+    hallOfFame: [{ monsterKey: "final/prometheus", displayName: "プロメテウス", finalLevel: 15, sizeMeters: 5, eatCount: 30, graduatedAt: 123 }],
+    lastGraduationPromptLevel: 15
+  };
+  global.localStorage = {
+    store: {},
+    getItem() { return JSON.stringify(raw); },
+    setItem() {}
+  };
+  const state = MonsterEngine.loadState();
+  assert.equal(state.lifetimeEatCount, 42);
+  assert.deepEqual(state.hallOfFame, raw.hallOfFame);
+  assert.equal(state.lastGraduationPromptLevel, 15);
+  delete global.localStorage;
+});
+
+// ---------------------------------------------------------------------------
+// sizeForLevel / formatSize / cssScaleForLevel
+// ---------------------------------------------------------------------------
+
+test("sizeForLevel is null/undefined-ish below Lv10", () => {
+  assert.equal(MonsterEngine.sizeForLevel(1), null);
+  assert.equal(MonsterEngine.sizeForLevel(9), null);
+});
+
+test("sizeForLevel follows 2.0 * 1.2^(level-10)", () => {
+  assert.equal(MonsterEngine.sizeForLevel(10), 2.0);
+  assert.ok(Math.abs(MonsterEngine.sizeForLevel(15) - 4.97664) < 1e-3);
+  assert.ok(Math.abs(MonsterEngine.sizeForLevel(20) - 12.3835) < 1e-2);
+});
+
+test("formatSize renders meters under 1000, kilometers at/above 1000", () => {
+  assert.equal(MonsterEngine.formatSize(5), "5.0m");
+  assert.equal(MonsterEngine.formatSize(999), "999.0m");
+  assert.equal(MonsterEngine.formatSize(1000), "1.0km");
+  assert.equal(MonsterEngine.formatSize(2900), "2.9km");
+});
+
+test("cssScaleForLevel is 1 at/below Lv10 and grows with a cap", () => {
+  assert.equal(MonsterEngine.cssScaleForLevel(1), 1);
+  assert.equal(MonsterEngine.cssScaleForLevel(10), 1);
+  assert.ok(MonsterEngine.cssScaleForLevel(11) > 1);
+  assert.equal(MonsterEngine.cssScaleForLevel(500), MonsterEngine.SCALE_CAP);
+});
+
+// ---------------------------------------------------------------------------
+// canGraduate / shouldShowGraduationPrompt / markGraduationPrompted
+// ---------------------------------------------------------------------------
+
+test("canGraduate requires final evolution stage and Lv10+", () => {
+  const state = MonsterEngine.createInitialMonsterState();
+  assert.equal(MonsterEngine.canGraduate(state), false);
+
+  const notFinal = Object.assign({}, state, { evolutionStage: 2, level: 12 });
+  assert.equal(MonsterEngine.canGraduate(notFinal), false);
+
+  const tooLow = Object.assign({}, state, { evolutionStage: 3, level: 9 });
+  assert.equal(MonsterEngine.canGraduate(tooLow), false);
+
+  const ready = Object.assign({}, state, { evolutionStage: 3, level: 10 });
+  assert.equal(MonsterEngine.canGraduate(ready), true);
+});
+
+test("shouldShowGraduationPrompt: true on first reaching Lv10", () => {
+  const state = Object.assign(MonsterEngine.createInitialMonsterState(), { evolutionStage: 3, level: 10 });
+  assert.equal(MonsterEngine.shouldShowGraduationPrompt(state), true);
+});
+
+test("shouldShowGraduationPrompt: false at Lv14 (no new 5-level threshold reached)", () => {
+  const state = Object.assign(MonsterEngine.createInitialMonsterState(), {
+    evolutionStage: 3, level: 14, lastGraduationPromptLevel: 10
+  });
+  assert.equal(MonsterEngine.shouldShowGraduationPrompt(state), false);
+});
+
+test("shouldShowGraduationPrompt: true at Lv15 after Lv10 was already prompted", () => {
+  const state = Object.assign(MonsterEngine.createInitialMonsterState(), {
+    evolutionStage: 3, level: 15, lastGraduationPromptLevel: 10
+  });
+  assert.equal(MonsterEngine.shouldShowGraduationPrompt(state), true);
+});
+
+test("markGraduationPrompted records the threshold and shouldShowGraduationPrompt becomes false", () => {
+  let state = Object.assign(MonsterEngine.createInitialMonsterState(), { evolutionStage: 3, level: 15, lastGraduationPromptLevel: 10 });
+  assert.equal(MonsterEngine.shouldShowGraduationPrompt(state), true);
+  state = MonsterEngine.markGraduationPrompted(state);
+  assert.equal(state.lastGraduationPromptLevel, 15);
+  assert.equal(MonsterEngine.shouldShowGraduationPrompt(state), false);
+});
+
+test("shouldShowGraduationPrompt: true again at Lv20 after Lv15 was prompted", () => {
+  let state = Object.assign(MonsterEngine.createInitialMonsterState(), { evolutionStage: 3, level: 15, lastGraduationPromptLevel: 10 });
+  state = MonsterEngine.markGraduationPrompted(state);
+  assert.equal(MonsterEngine.shouldShowGraduationPrompt(state), false);
+
+  const atTwenty = Object.assign({}, state, { level: 20 });
+  assert.equal(MonsterEngine.shouldShowGraduationPrompt(atTwenty), true);
+});
+
+// ---------------------------------------------------------------------------
+// graduate
+// ---------------------------------------------------------------------------
+
+test("graduate records a hall-of-fame entry and resets to a fresh baby", () => {
+  let state = MonsterEngine.createInitialMonsterState();
+  state = MonsterEngine.applyFeeding(state, "apple", 120).state; // -> child
+  state = MonsterEngine.applyFeeding(state, "apple", 330).state; // -> mature
+  state = MonsterEngine.applyFeeding(state, "apple", 720).state; // -> final, Lv10
+  assert.equal(state.level, 10);
+  assert.equal(MonsterEngine.canGraduate(state), true);
+
+  const before = state.lifetimeEatCount;
+  const result = MonsterEngine.graduate(state, 1_700_000_000_000);
+
+  // Hall of fame record content
+  assert.equal(result.hallOfFame.length, 1);
+  const record = result.hallOfFame[0];
+  assert.equal(record.monsterKey, "final/prometheus");
+  assert.equal(record.displayName, MonsterEngine.MONSTER_LABELS.prometheus);
+  assert.equal(record.finalLevel, 10);
+  assert.equal(record.sizeMeters, MonsterEngine.sizeForLevel(10));
+  assert.equal(record.eatCount, before);
+  assert.equal(record.graduatedAt, 1_700_000_000_000);
+
+  // obtainedMonsters carried over from the graduated individual
+  assert.deepEqual(result.obtainedMonsters, state.obtainedMonsters);
+
+  // New generation resets to a fresh Lv1 baby
+  assert.equal(result.level, 1);
+  assert.equal(result.growthPoints, 0);
+  assert.equal(result.evolutionStage, 0);
+  assert.equal(result.evolutionType, "baby");
+  assert.equal(result.lifetimeEatCount, 0);
+  assert.equal(result.lastGraduationPromptLevel, 0);
+});
+
+test("graduate accepts a Date for `now` just like other engine date params", () => {
+  let state = MonsterEngine.createInitialMonsterState();
+  state = MonsterEngine.applyFeeding(state, "apple", 120).state;
+  state = MonsterEngine.applyFeeding(state, "apple", 330).state;
+  state = MonsterEngine.applyFeeding(state, "apple", 720).state;
+  const now = new Date(2026, 0, 1, 12, 0, 0);
+  const result = MonsterEngine.graduate(state, now);
+  assert.equal(result.hallOfFame[0].graduatedAt, now.getTime());
+});
+
+test("graduate accumulates multiple generations into hallOfFame across repeated graduations", () => {
+  let state = MonsterEngine.createInitialMonsterState();
+  state = MonsterEngine.applyFeeding(state, "apple", 120).state;
+  state = MonsterEngine.applyFeeding(state, "apple", 330).state;
+  state = MonsterEngine.applyFeeding(state, "apple", 720).state;
+  state = MonsterEngine.graduate(state, 1000);
+
+  state = MonsterEngine.applyFeeding(state, "carrot", 120).state;
+  state = MonsterEngine.applyFeeding(state, "carrot", 330).state;
+  state = MonsterEngine.applyFeeding(state, "carrot", 720).state;
+  state = MonsterEngine.graduate(state, 2000);
+
+  assert.equal(state.hallOfFame.length, 2);
+  assert.equal(state.hallOfFame[0].monsterKey, "final/prometheus");
+  assert.equal(state.hallOfFame[1].monsterKey, "final/raiden_volf");
 });

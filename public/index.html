@@ -190,8 +190,32 @@
       display:flex;
       align-items:center;
       justify-content:center;
-      overflow:visible;
+      overflow:hidden;
       min-height:0;
+    }
+    .monster-scale-wrap{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      transform-origin:center bottom;
+      transition:transform .3s ease;
+    }
+    .hud-size{
+      margin-left:4px;
+      font-weight:700;
+      color:#5b6b7a;
+      font-size:10px;
+      white-space:nowrap;
+    }
+    @keyframes screenShake{
+      0%,100%{transform:translate(0,0)}
+      20%{transform:translate(calc(-1 * var(--shake-amt,2px)), calc(1 * var(--shake-amt,2px)))}
+      40%{transform:translate(var(--shake-amt,2px), calc(-1 * var(--shake-amt,2px)))}
+      60%{transform:translate(calc(-1 * var(--shake-amt,2px)), calc(-1 * var(--shake-amt,2px)))}
+      80%{transform:translate(var(--shake-amt,2px), var(--shake-amt,2px))}
+    }
+    .app-shell.shaking{
+      animation:screenShake .32s ease-in-out;
     }
     .food-row{
       grid-area:food;
@@ -408,9 +432,25 @@
     .action-bar{
       grid-area:action;
       display:flex;
-      justify-content:center;
+      flex-direction:column;
+      align-items:center;
+      gap:6px;
       padding:8px 12px calc(12px + env(safe-area-inset-bottom, 0px));
       z-index:10;
+    }
+    .finish-button{
+      border:2px solid var(--border);
+      border-radius:14px;
+      width:100%;
+      max-width:460px;
+      min-height:34px;
+      padding:6px 16px;
+      background:#fff;
+      color:var(--text);
+      font-size:13px;
+      font-weight:700;
+      box-shadow:2px 2px 0 rgba(31,54,80,.14);
+      cursor:pointer;
     }
     .tap-button{
       border:2px solid #ffffff;
@@ -467,12 +507,15 @@
       font-size:18px;
     }
     .menu-stat{
-      border:2px solid var(--border);
-      background:#fff;
-      padding:10px 12px;
+      border:1px dashed #9aa7b4;
+      border-radius:999px;
+      background:#eef2f6;
+      color:#5b6b7a;
+      padding:6px 12px;
       font-weight:700;
-      font-size:13px;
-      margin-bottom:10px;
+      font-size:12px;
+      margin-bottom:12px;
+      cursor:default;
     }
     .menu-actions{
       display:grid;
@@ -486,6 +529,10 @@
       text-align:left;
       font-weight:700;
       cursor:pointer;
+    }
+    .menu-actions button:disabled{
+      opacity:.5;
+      cursor:not-allowed;
     }
     /* 横画面（landscape） */
     @media (orientation:landscape){
@@ -659,6 +706,7 @@
     .enc-card.unknown{opacity:.55}
     .enc-card.unknown .enc-card-name{color:rgba(180,210,240,.5)}
     .enc-card-unknown-icon{font-size:20px;font-weight:900;color:rgba(180,210,240,.3);line-height:36px}
+    .enc-card-silhouette{filter:brightness(0);opacity:.6}
     .enc-not-found{
       padding:24px 16px;
       text-align:center;
@@ -749,6 +797,192 @@
       .enc-detail-table td{padding:2px 5px}
       .enc-anim-wrap{padding:6px;margin-bottom:8px}
     }
+    /* ---- Phase6: 卒業 / リザルト / 殿堂 ---- */
+    .full-panel{
+      position:absolute;
+      inset:0;
+      z-index:40;
+      display:none;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:14px;
+      padding:20px;
+      background:rgba(8,20,40,.94);
+      color:#fff;
+      text-align:center;
+      overflow-y:auto;
+    }
+    .full-panel.open{display:flex}
+    .full-panel h2{
+      margin:0;
+      font-size:20px;
+      line-height:1.5;
+    }
+    .full-panel p{
+      margin:0;
+      font-size:14px;
+      line-height:1.7;
+      color:#dbeafd;
+    }
+    .result-body-shot{
+      width:min(46vw, 200px);
+      max-width:200px;
+      filter:drop-shadow(0 10px 20px rgba(0,0,0,.4));
+    }
+    .result-stats{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(120px,1fr));
+      gap:8px 16px;
+      background:rgba(255,255,255,.06);
+      border-radius:10px;
+      padding:12px 16px;
+      max-width:360px;
+      width:100%;
+    }
+    .result-stat{
+      text-align:left;
+    }
+    .result-stat-label{
+      font-size:11px;
+      color:#9bc0e8;
+      font-weight:700;
+    }
+    .result-stat-value{
+      font-size:18px;
+      font-weight:900;
+    }
+    .graduation-banner{
+      border:1px dashed rgba(255,255,255,.5);
+      border-radius:999px;
+      padding:8px 18px;
+      font-size:13px;
+      font-weight:700;
+      background:rgba(255,255,255,.08);
+      cursor:pointer;
+    }
+    .full-panel-buttons{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      width:100%;
+      max-width:340px;
+    }
+    .full-panel-buttons.row{
+      flex-direction:row;
+    }
+    .full-panel button.choice-btn{
+      flex:1;
+      border:2px solid #fff;
+      border-radius:14px;
+      padding:14px 10px;
+      font-size:14px;
+      font-weight:900;
+      background:rgba(255,255,255,.08);
+      color:#fff;
+      cursor:pointer;
+    }
+    .full-panel button.choice-btn.primary{
+      background:linear-gradient(180deg,var(--pink) 0%,var(--pink-deep) 100%);
+      border-color:#fff;
+    }
+    .full-panel button.close-btn{
+      border:1px solid rgba(255,255,255,.5);
+      border-radius:999px;
+      padding:8px 20px;
+      background:transparent;
+      color:#fff;
+      font-size:13px;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .longpress-btn{
+      position:relative;
+      width:140px;
+      height:140px;
+      border-radius:50%;
+      border:3px solid #fff;
+      background:radial-gradient(circle,var(--pink) 0%,var(--pink-deep) 100%);
+      color:#fff;
+      font-size:14px;
+      font-weight:900;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      touch-action:none;
+      user-select:none;
+      overflow:hidden;
+    }
+    .longpress-ring{
+      position:absolute;
+      inset:0;
+      border-radius:50%;
+      background:conic-gradient(rgba(255,255,255,.9) calc(var(--progress,0) * 1%), transparent 0);
+      -webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 8px), #000 calc(100% - 7px));
+      mask:radial-gradient(farthest-side, transparent calc(100% - 8px), #000 calc(100% - 7px));
+      pointer-events:none;
+    }
+    .hof-panel{
+      align-items:stretch;
+      justify-content:flex-start;
+      padding:0;
+    }
+    .hof-header{
+      flex-shrink:0;
+      display:flex;
+      align-items:center;
+      padding:8px 12px;
+      background:linear-gradient(90deg,#1a3a6e 0%,#1e4a8a 100%);
+      border-bottom:2px solid #3a7dc8;
+      gap:10px;
+    }
+    .hof-header h2{flex:1;font-size:16px;margin:0}
+    .hof-list{
+      flex:1;
+      overflow-y:auto;
+      padding:12px;
+      display:grid;
+      gap:10px;
+      width:100%;
+    }
+    .hof-empty{
+      padding:30px 16px;
+      color:rgba(255,255,255,.5);
+      font-size:13px;
+    }
+    .hof-card{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.18);
+      border-radius:10px;
+      padding:8px 10px;
+      text-align:left;
+    }
+    .hof-card img{width:52px;height:52px;object-fit:contain}
+    .hof-card-name{font-size:14px;font-weight:900}
+    .hof-card-meta{font-size:11px;color:#bcd8f5;line-height:1.6}
+    .parent-menu-details{
+      margin-top:4px;
+      border:1px dashed #9aa7b4;
+      border-radius:8px;
+      padding:6px 8px;
+      background:#f3f5f7;
+    }
+    .parent-menu-details summary{
+      cursor:pointer;
+      font-size:11px;
+      font-weight:700;
+      color:#5b6b7a;
+    }
+    .parent-menu-details p{
+      font-size:10.5px;
+      line-height:1.6;
+      color:#3a4048;
+      margin:6px 0 0;
+    }
     @keyframes floaty{
       0%,100%{transform:translateY(0)}
       50%{transform:translateY(-6px)}
@@ -781,7 +1015,7 @@
     <div class="evolution-flash" aria-hidden="true"></div>
     <header class="hud">
       <div class="hud-box">なまえ：<strong id="monsterName">モモ</strong></div>
-      <div class="hud-box">レベル：<strong id="levelValue">1</strong><div class="level-meter"><div class="level-fill" id="levelFill"></div></div></div>
+      <div class="hud-box">レベル：<strong id="levelValue">1</strong><span class="hud-size" id="sizeValue"></span><div class="level-meter"><div class="level-fill" id="levelFill"></div></div></div>
       <button class="menu-button" id="menuToggle" aria-label="メニュー">
         <span class="hamburger-icon"><span></span><span></span><span></span></span>
       </button>
@@ -797,7 +1031,9 @@
       <div class="pt-bubble" id="ptBubble">+10pt</div>
       <div class="sparkles" id="sparkles"></div>
       <img id="evolutionShadow" class="evolution-shadow" src="/static/monsters/baby/baby/evolve/frame1.png" alt="" />
-      <img id="monster" class="monster idle" data-stage="baby" src="/static/monsters/baby/baby/idle/frame1.png" alt="monster" />
+      <div class="monster-scale-wrap" id="monsterScaleWrap">
+        <img id="monster" class="monster idle" data-stage="baby" src="/static/monsters/baby/baby/idle/frame1.png" alt="monster" />
+      </div>
       <img id="foodOverlay" class="food-overlay" src="/static/foods/apple.svg" alt="food" />
     </section>
 
@@ -805,6 +1041,7 @@
 
     <section class="action-bar">
       <button class="tap-button" id="tapButton">たべたよ！</button>
+      <button class="finish-button" id="finishButton">ごちそうさま</button>
     </section>
 
     <aside class="menu-panel" id="menuPanel">
@@ -812,11 +1049,22 @@
       <div class="menu-stat">たべたかいすう：<strong id="eatCount">0</strong></div>
       <div class="menu-actions">
         <button id="openEncyclopedia">モンスター図鑑をみる</button>
-        <button id="reloadMonster">新しいモンスターにする</button>
+        <button id="openHallOfFame">でんどうをみる</button>
+        <button id="graduateButton" disabled>Lv10になったら そつぎょうできるよ</button>
         <button id="bgmToggle">BGM：<span id="bgmToggleLabel">ON</span></button>
         <button id="sfxToggle">効果音：<span id="sfxToggleLabel">ON</span></button>
         <button id="closeMenu">メニューを閉じる</button>
       </div>
+      <details class="parent-menu-details">
+        <summary>保護者向けメニュー (For Parents)</summary>
+        <div class="menu-actions" style="margin-top:8px">
+          <button id="undoGraduationButton" disabled>卒業の取消 (Undo Graduation)</button>
+        </div>
+        <details class="parent-menu-details" style="margin-top:6px;background:transparent">
+          <summary>進化ルートについて (Evolution Route Guide)</summary>
+          <p>【保護者向け / For Parents】進化分岐は各段階（Lv1-3, Lv3-6）で最も多く選択された食材の属性で決定されます。全食材が15%以上の場合は Balance Route に分岐します。多様な食材選択が図鑑コンプリートの最短経路です。</p>
+        </details>
+      </details>
     </aside>
 
     <div class="encyclopedia-panel" id="encyclopediaPanel">
@@ -833,6 +1081,54 @@
         </div>
       </div>
     </div>
+
+    <div class="full-panel" id="resultPanel">
+      <h2>ごちそうさまでした！</h2>
+      <img id="resultBodyShot" class="result-body-shot" src="/static/monsters/baby/baby/idle/frame1.png" alt="" />
+      <div class="result-stats">
+        <div class="result-stat"><div class="result-stat-label">たべたかいすう</div><div class="result-stat-value" id="resultEatCount">0</div></div>
+        <div class="result-stat"><div class="result-stat-label">かくとくpt</div><div class="result-stat-value" id="resultPoints">0</div></div>
+        <div class="result-stat"><div class="result-stat-label">さいだいコンボ</div><div class="result-stat-value" id="resultMaxCombo">0</div></div>
+        <div class="result-stat"><div class="result-stat-label">レベル</div><div class="result-stat-value" id="resultLevel">1</div></div>
+        <div class="result-stat" id="resultSizeRow" style="display:none">
+          <div class="result-stat-label">おおきさ</div><div class="result-stat-value" id="resultSize"></div>
+        </div>
+      </div>
+      <div class="graduation-banner" id="resultGraduationBanner" style="display:none">✨ そつぎょうできるよ ✨</div>
+      <button class="close-btn" id="resultCloseButton">とじる</button>
+    </div>
+
+    <div class="full-panel" id="graduationChoicePanel">
+      <h2 id="graduationChoiceHeading">さいしゅうしんか、おめでとう！</h2>
+      <p id="graduationChoiceBody">これから、どうする？</p>
+      <div class="full-panel-buttons row">
+        <button class="choice-btn primary" id="chooseGraduateButton">そつぎょうして<br>でんどうに かざる</button>
+        <button class="choice-btn" id="chooseContinueButton">もっと おおきく<br>そだてる！</button>
+      </div>
+    </div>
+
+    <div class="full-panel" id="graduationConfirmPanel">
+      <h2>ながおしで<br>おわかれの あいさつをしよう</h2>
+      <div class="longpress-btn" id="longpressButton">
+        <div class="longpress-ring" id="longpressRing"></div>
+        <span>ながおし</span>
+      </div>
+      <button class="close-btn" id="graduationConfirmCancel">やめる</button>
+    </div>
+
+    <div class="full-panel" id="graduationCelebratePanel">
+      <h2>🏆 でんどう入り！ 🏆</h2>
+      <p id="graduationCelebrateBody"></p>
+      <button class="close-btn" id="graduationCelebrateCloseButton">あたらしい こに あう</button>
+    </div>
+
+    <div class="full-panel hof-panel" id="hallOfFamePanel">
+      <div class="hof-header">
+        <h2>🏆 でんどう</h2>
+        <button class="enc-close" id="hofClose">とじる</button>
+      </div>
+      <div class="hof-list" id="hofList"></div>
+    </div>
   </main>
 
   <script src="/static/js/monster-engine.js"></script>
@@ -846,13 +1142,16 @@
     const COMBO_CONTINUE_SECONDS = 30;
 
     const monsterEl = document.getElementById("monster");
+    const monsterScaleWrapEl = document.getElementById("monsterScaleWrap");
     const appShellEl = document.getElementById("appShell");
     const evolutionShadowEl = document.getElementById("evolutionShadow");
     const foodOverlayEl = document.getElementById("foodOverlay");
     const sparklesEl = document.getElementById("sparkles");
     const tapButtonEl = document.getElementById("tapButton");
+    const finishButtonEl = document.getElementById("finishButton");
     const monsterNameEl = document.getElementById("monsterName");
     const levelValueEl = document.getElementById("levelValue");
+    const sizeValueEl = document.getElementById("sizeValue");
     const levelFillEl = document.getElementById("levelFill");
     const eatCountEl = document.getElementById("eatCount");
     const menuPanelEl = document.getElementById("menuPanel");
@@ -861,6 +1160,39 @@
     const comboValueEl = document.getElementById("comboValue");
     const comboTimerFillEl = document.getElementById("comboTimerFill");
     const ptBubbleEl = document.getElementById("ptBubble");
+    const graduateButtonEl = document.getElementById("graduateButton");
+    const undoGraduationButtonEl = document.getElementById("undoGraduationButton");
+
+    // ---- Phase6: リザルト / 卒業 / 殿堂 の要素 ----
+    const resultPanelEl = document.getElementById("resultPanel");
+    const resultBodyShotEl = document.getElementById("resultBodyShot");
+    const resultEatCountEl = document.getElementById("resultEatCount");
+    const resultPointsEl = document.getElementById("resultPoints");
+    const resultMaxComboEl = document.getElementById("resultMaxCombo");
+    const resultLevelEl = document.getElementById("resultLevel");
+    const resultSizeRowEl = document.getElementById("resultSizeRow");
+    const resultSizeEl = document.getElementById("resultSize");
+    const resultGraduationBannerEl = document.getElementById("resultGraduationBanner");
+    const resultCloseButtonEl = document.getElementById("resultCloseButton");
+
+    const graduationChoicePanelEl = document.getElementById("graduationChoicePanel");
+    const graduationChoiceHeadingEl = document.getElementById("graduationChoiceHeading");
+    const graduationChoiceBodyEl = document.getElementById("graduationChoiceBody");
+    const chooseGraduateButtonEl = document.getElementById("chooseGraduateButton");
+    const chooseContinueButtonEl = document.getElementById("chooseContinueButton");
+
+    const graduationConfirmPanelEl = document.getElementById("graduationConfirmPanel");
+    const longpressButtonEl = document.getElementById("longpressButton");
+    const longpressRingEl = document.getElementById("longpressRing");
+
+    const graduationCelebratePanelEl = document.getElementById("graduationCelebratePanel");
+    const graduationCelebrateBodyEl = document.getElementById("graduationCelebrateBody");
+
+    const hallOfFamePanelEl = document.getElementById("hallOfFamePanel");
+    const hofListEl = document.getElementById("hofList");
+
+    const GRADUATION_BACKUP_KEY = "mgu_graduation_backup_v1";
+    const LONGPRESS_MS = 3000;
 
     // Current-run (in-memory only) session stats — never persisted.
     let selectedFood = "apple";
@@ -1197,6 +1529,57 @@
       const progress = MonsterEngine.levelProgressFromPoints(monsterState.growthPoints);
       const gaugePercent = Math.max(0, Math.min(100, (progress.pointsIntoLevel / (progress.pointsNeededForNext || 1)) * 100));
       levelFillEl.style.width = `${gaugePercent}%`;
+
+      // 継続ルート：Lv10超のはみ出し表現（常時、ホーム画面に反映）
+      const scale = MonsterEngine.cssScaleForLevel(monsterState.level);
+      monsterScaleWrapEl.style.transform = `scale(${scale})`;
+      const isOverflowing = monsterState.evolutionStage === 3 && monsterState.level > MonsterEngine.SECOND_EVOLUTION_LEVEL;
+      if (isOverflowing) {
+        sizeValueEl.textContent = `（${MonsterEngine.formatSize(MonsterEngine.sizeForLevel(monsterState.level))}）`;
+      } else {
+        sizeValueEl.textContent = "";
+      }
+
+      updateGraduateButtonState();
+      updateUndoButtonState();
+    }
+
+    function todayDateString(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+
+    function readGraduationBackup() {
+      try {
+        const raw = localStorage.getItem(GRADUATION_BACKUP_KEY);
+        return raw ? JSON.parse(raw) : null;
+      } catch (err) {
+        return null;
+      }
+    }
+
+    function updateGraduateButtonState() {
+      const ready = MonsterEngine.canGraduate(monsterState);
+      graduateButtonEl.disabled = !ready;
+      graduateButtonEl.textContent = ready ? "そつぎょうする" : "Lv10になったら そつぎょうできるよ";
+    }
+
+    function updateUndoButtonState() {
+      const backup = readGraduationBackup();
+      const valid = !!backup && backup.date === todayDateString(new Date());
+      undoGraduationButtonEl.disabled = !valid;
+    }
+
+    function triggerShakeIfHuge() {
+      if (monsterState.evolutionStage === 3 && monsterState.level > MonsterEngine.SECOND_EVOLUTION_LEVEL) {
+        const amt = Math.min(26, 2 + (monsterState.level - MonsterEngine.SECOND_EVOLUTION_LEVEL) * 0.7);
+        appShellEl.style.setProperty("--shake-amt", `${amt}px`);
+        appShellEl.classList.remove("shaking");
+        void appShellEl.offsetWidth;
+        appShellEl.classList.add("shaking");
+      }
     }
 
     function resetSessionCounters() {
@@ -1257,27 +1640,22 @@
           await absorbStackFoods();
           await runEvolutionScene(2200);
           updateHudFromState();
+          maybeShowGraduationRitual();
         })();
       } else {
         updateHudFromState();
         playScene("eat", 1000);
+        triggerShakeIfHuge();
       }
     }
 
-    function reloadMonster() {
-      const confirmed = window.confirm("いまのモンスターのせいちょうきろくがきえます。新しいモンスターにしますか？");
-      if (!confirmed) return;
-      const preservedObtained = (monsterState && Array.isArray(monsterState.obtainedMonsters))
-        ? monsterState.obtainedMonsters.slice()
-        : ["baby/baby"];
-      const fresh = MonsterEngine.createInitialMonsterState();
-      fresh.obtainedMonsters = preservedObtained;
-      monsterState = fresh;
-      MonsterEngine.saveState(monsterState);
-      resetSessionCounters();
-      updateHudFromState();
-      playScene("idle");
-      menuPanelEl.classList.remove("open");
+    // Lv10到達（最終進化）の初回のみ、進化演出のあとに卒業選択の儀式を表示する。
+    function maybeShowGraduationRitual() {
+      const justReachedFinal = monsterState.evolutionStage === 3 &&
+        monsterState.lastEvolutionLevel === MonsterEngine.SECOND_EVOLUTION_LEVEL;
+      if (justReachedFinal && MonsterEngine.shouldShowGraduationPrompt(monsterState)) {
+        openGraduationChoicePanel(true);
+      }
     }
 
     function updateSfxToggleLabel() {
@@ -1290,8 +1668,9 @@
 
     document.getElementById("menuToggle").addEventListener("click", () => {
       menuPanelEl.classList.toggle("open");
+      updateGraduateButtonState();
+      updateUndoButtonState();
     });
-    document.getElementById("reloadMonster").addEventListener("click", reloadMonster);
     document.getElementById("sfxToggle").addEventListener("click", () => {
       sfxEnabled = !sfxEnabled;
       updateSfxToggleLabel();
@@ -1309,6 +1688,215 @@
       menuPanelEl.classList.remove("open");
     });
     tapButtonEl.addEventListener("click", tapMeal);
+
+    // ---- Phase6: ごちそうさま / リザルト画面 ----
+
+    function openResultPanel() {
+      resultEatCountEl.textContent = String(eatCount);
+      resultPointsEl.textContent = String(totalPoints);
+      resultMaxComboEl.textContent = String(maxCombo);
+      resultLevelEl.textContent = String(monsterState.level);
+      resultBodyShotEl.src = `/static/monsters/${currentMonster}/idle/frame1.png`;
+
+      const isOverflowing = monsterState.evolutionStage === 3 && monsterState.level > MonsterEngine.SECOND_EVOLUTION_LEVEL;
+      if (isOverflowing) {
+        resultSizeRowEl.style.display = "";
+        resultSizeEl.textContent = MonsterEngine.formatSize(MonsterEngine.sizeForLevel(monsterState.level));
+      } else {
+        resultSizeRowEl.style.display = "none";
+      }
+
+      const showBanner = MonsterEngine.shouldShowGraduationPrompt(monsterState);
+      resultGraduationBannerEl.style.display = showBanner ? "" : "none";
+      if (showBanner) {
+        recordGraduationPromptShown();
+      }
+
+      resultPanelEl.classList.add("open");
+    }
+
+    function closeResultPanel() {
+      resultPanelEl.classList.remove("open");
+      resetSessionCounters();
+    }
+
+    finishButtonEl.addEventListener("click", openResultPanel);
+    resultCloseButtonEl.addEventListener("click", closeResultPanel);
+    resultGraduationBannerEl.addEventListener("click", () => {
+      resultPanelEl.classList.remove("open");
+      openGraduationChoicePanel(false);
+    });
+
+    // ---- Phase6: 卒業フロー（二択 → 長押し確認 → 殿堂） ----
+
+    function recordGraduationPromptShown() {
+      monsterState = MonsterEngine.markGraduationPrompted(monsterState);
+      MonsterEngine.saveState(monsterState);
+    }
+
+    function openGraduationChoicePanel(isRitual) {
+      recordGraduationPromptShown();
+      if (isRitual) {
+        graduationChoiceHeadingEl.textContent = "さいしゅうしんか、おめでとう！";
+        graduationChoiceBodyEl.textContent = "そつぎょうして でんどうに かざる？ それとも、もっと おおきく そだてる？";
+      } else {
+        graduationChoiceHeadingEl.textContent = "そつぎょうする？";
+        graduationChoiceBodyEl.textContent = "いまなら そつぎょうして でんどうに かざれるよ。";
+      }
+      graduationChoicePanelEl.classList.add("open");
+    }
+
+    chooseGraduateButtonEl.addEventListener("click", () => {
+      graduationChoicePanelEl.classList.remove("open");
+      openGraduationConfirmPanel();
+    });
+    chooseContinueButtonEl.addEventListener("click", () => {
+      graduationChoicePanelEl.classList.remove("open");
+    });
+
+    graduateButtonEl.addEventListener("click", () => {
+      if (!MonsterEngine.canGraduate(monsterState)) return;
+      menuPanelEl.classList.remove("open");
+      openGraduationConfirmPanel();
+    });
+
+    let longpressRAF = null;
+    let longpressStartedAt = 0;
+
+    function resetLongpressRing() {
+      longpressRingEl.style.setProperty("--progress", "0");
+    }
+
+    function openGraduationConfirmPanel() {
+      resetLongpressRing();
+      graduationConfirmPanelEl.classList.add("open");
+    }
+
+    function cancelLongpress() {
+      if (longpressRAF) {
+        cancelAnimationFrame(longpressRAF);
+        longpressRAF = null;
+      }
+      longpressStartedAt = 0;
+      resetLongpressRing();
+    }
+
+    function stepLongpress(timestamp) {
+      if (!longpressStartedAt) longpressStartedAt = timestamp;
+      const elapsed = timestamp - longpressStartedAt;
+      const percent = Math.min(100, (elapsed / LONGPRESS_MS) * 100);
+      longpressRingEl.style.setProperty("--progress", String(percent));
+      if (elapsed >= LONGPRESS_MS) {
+        longpressRAF = null;
+        longpressStartedAt = 0;
+        graduationConfirmPanelEl.classList.remove("open");
+        performGraduation();
+        return;
+      }
+      longpressRAF = window.requestAnimationFrame(stepLongpress);
+    }
+
+    longpressButtonEl.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      longpressStartedAt = 0;
+      longpressRAF = window.requestAnimationFrame(stepLongpress);
+    });
+    ["pointerup", "pointerleave", "pointercancel"].forEach((eventName) => {
+      longpressButtonEl.addEventListener(eventName, cancelLongpress);
+    });
+    document.getElementById("graduationConfirmCancel").addEventListener("click", () => {
+      cancelLongpress();
+      graduationConfirmPanelEl.classList.remove("open");
+    });
+
+    function performGraduation() {
+      try {
+        localStorage.setItem(GRADUATION_BACKUP_KEY, JSON.stringify({
+          state: monsterState,
+          date: todayDateString(new Date())
+        }));
+      } catch (err) {
+        // localStorage unavailable — graduation still proceeds, just without an undo backup.
+      }
+      monsterState = MonsterEngine.graduate(monsterState, new Date());
+      MonsterEngine.saveState(monsterState);
+      showGraduationCelebration();
+    }
+
+    function showGraduationCelebration() {
+      const hof = Array.isArray(monsterState.hallOfFame) ? monsterState.hallOfFame : [];
+      const last = hof[hof.length - 1];
+      graduationCelebrateBodyEl.textContent = last
+        ? `${last.displayName}が でんどうに かざられたよ。さいしゅうレベル ${last.finalLevel}／おおきさ ${MonsterEngine.formatSize(last.sizeMeters)}`
+        : "";
+      graduationCelebratePanelEl.classList.add("open");
+    }
+
+    document.getElementById("graduationCelebrateCloseButton").addEventListener("click", () => {
+      graduationCelebratePanelEl.classList.remove("open");
+      resetSessionCounters();
+      updateHudFromState();
+      playScene("idle");
+    });
+
+    function undoGraduation() {
+      const backup = readGraduationBackup();
+      if (!backup || backup.date !== todayDateString(new Date())) return;
+      monsterState = backup.state;
+      MonsterEngine.saveState(monsterState);
+      try {
+        localStorage.removeItem(GRADUATION_BACKUP_KEY);
+      } catch (err) {
+        // ignore
+      }
+      resetSessionCounters();
+      updateHudFromState();
+      playScene("idle");
+      menuPanelEl.classList.remove("open");
+    }
+
+    undoGraduationButtonEl.addEventListener("click", undoGraduation);
+
+    // ---- Phase6: 殿堂（Hall of Fame） ----
+
+    function renderHallOfFame() {
+      const hof = Array.isArray(monsterState.hallOfFame) ? monsterState.hallOfFame : [];
+      if (!hof.length) {
+        hofListEl.innerHTML = '<div class="hof-empty">まだ でんどういりした こは いないよ。<br>そつぎょうすると、ここに きろくがのこるよ。</div>';
+        return;
+      }
+      hofListEl.innerHTML = hof.slice().reverse().map((record) => {
+        const graduatedDate = new Date(record.graduatedAt);
+        const dateLabel = isNaN(graduatedDate.getTime())
+          ? ""
+          : `${graduatedDate.getFullYear()}/${graduatedDate.getMonth() + 1}/${graduatedDate.getDate()}`;
+        const sizeLabel = typeof record.sizeMeters === "number" ? MonsterEngine.formatSize(record.sizeMeters) : "";
+        return `
+          <div class="hof-card">
+            <img src="/static/monsters/${record.monsterKey}/idle/frame1.png" alt="${record.displayName}" onerror="this.style.opacity='0.1'">
+            <div>
+              <div class="hof-card-name">${record.displayName}</div>
+              <div class="hof-card-meta">
+                さいしゅうレベル：${record.finalLevel}　おおきさ：${sizeLabel}<br>
+                いっしょにたべたかいすう：${record.eatCount}　そつぎょうび：${dateLabel}
+              </div>
+            </div>
+          </div>`;
+      }).join("");
+    }
+
+    function openHallOfFame() {
+      menuPanelEl.classList.remove("open");
+      renderHallOfFame();
+      hallOfFamePanelEl.classList.add("open");
+    }
+
+    function closeHallOfFame() {
+      hallOfFamePanelEl.classList.remove("open");
+    }
+
+    document.getElementById("openHallOfFame").addEventListener("click", openHallOfFame);
+    document.getElementById("hofClose").addEventListener("click", closeHallOfFame);
 
     window.addEventListener("load", () => {
       renderFoodButtons();
@@ -1417,8 +2005,8 @@
         encDetailEl.innerHTML = `
           <div>
             <div class="enc-detail-no">No.${mon.no}</div>
-            <div class="enc-detail-name" style="color:#3a5a7a;text-shadow:none">???</div>
-            <div class="enc-not-found">まだであっていないよ。<br>しんかすると図鑑にとうろくされるよ！</div>
+            <div class="enc-detail-name" style="color:#3a5a7a;text-shadow:none">？？？</div>
+            <div class="enc-not-found">いろんな ごはんを たべていると、<br>いろんな子に あえるよ！</div>
           </div>`;
         return;
       }
@@ -1463,9 +2051,9 @@
           <div class="enc-card-img-wrap">
             ${obtained
               ? `<img class="enc-card-img" src="/static/monsters/${mon.key}/idle/frame1.png" alt="${mon.name}" onerror="this.style.opacity='0.1'">`
-              : `<span class="enc-card-unknown-icon">?</span>`}
+              : `<img class="enc-card-img enc-card-silhouette" src="/static/monsters/${mon.key}/idle/frame1.png" alt="？？？" onerror="this.outerHTML='&lt;span class=&quot;enc-card-unknown-icon&quot;&gt;？&lt;/span&gt;'">`}
           </div>
-          <span class="enc-card-name">${obtained ? mon.name : "???"}</span>`;
+          <span class="enc-card-name">${obtained ? mon.name : "？？？"}</span>`;
         card.addEventListener("click", () => {
           encSelectedIdx = idx;
           document.querySelectorAll(".enc-card").forEach((c, i) => c.classList.toggle("selected", i === idx));
