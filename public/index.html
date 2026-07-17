@@ -1756,6 +1756,7 @@
       resultMaxComboEl.textContent = String(maxCombo);
       resultLevelEl.textContent = String(monsterState.level);
       resultBodyShotEl.src = `/static/monsters/${currentMonster}/idle/frame1.png`;
+      bgmAudio.pause();
 
       const isOverflowing = monsterState.evolutionStage === 3 && monsterState.level > MonsterEngine.SECOND_EVOLUTION_LEVEL;
       if (isOverflowing) {
@@ -1777,6 +1778,7 @@
     function closeResultPanel() {
       resultPanelEl.classList.remove("open");
       resetSessionCounters();
+      tryStartBgm();
     }
 
     finishButtonEl.addEventListener("click", openResultPanel);
@@ -1811,6 +1813,7 @@
     });
     chooseContinueButtonEl.addEventListener("click", () => {
       graduationChoicePanelEl.classList.remove("open");
+      tryStartBgm();
     });
 
     graduateButtonEl.addEventListener("click", () => {
