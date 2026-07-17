@@ -1229,20 +1229,44 @@
     document.addEventListener("pointerdown", tryStartBgm);
 
     // ---- Audio (SFX) ----
-    // Preload each effect once so playback starts instantly instead of
-    // waiting for a network fetch on every tap.
-    const sfxCache = {};
-    for (const path of ["/static/audio/sfx_food_select.wav", "/static/audio/sfx_eat.wav", "/static/audio/sfx_evolve.mp3"]) {
-      const audio = new Audio(path);
-      audio.preload = "auto";
-      sfxCache[path] = audio;
+    // Play through Web Audio instead of cloning an <audio> element per tap:
+    // cloneNode() doesn't carry over the decoded/buffered media, so every
+    // clone re-enters the browser's load pipeline and adds tens of ms of
+    // lag. Decoding once into an AudioBuffer and firing a fresh
+    // BufferSourceNode per tap starts sound with near-zero latency.
+    const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+    const audioCtx = AudioContextCtor ? new AudioContextCtor() : null;
+    const sfxBuffers = {};
+    const sfxPaths = ["/static/audio/sfx_food_select.wav", "/static/audio/sfx_eat.wav", "/static/audio/sfx_evolve.mp3"];
+    if (audioCtx) {
+      document.addEventListener("pointerdown", () => {
+        if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
+      });
+      for (const path of sfxPaths) {
+        fetch(path)
+          .then((res) => res.arrayBuffer())
+          .then((buf) => audioCtx.decodeAudioData(buf))
+          .then((decoded) => { sfxBuffers[path] = decoded; })
+          .catch(() => {});
+      }
     }
 
     const playingSfx = new Set();
 
     function playSfx(path) {
       if (!sfxEnabled || document.hidden) return;
-      const sfx = sfxCache[path] ? sfxCache[path].cloneNode() : new Audio(path);
+      if (audioCtx && sfxBuffers[path]) {
+        const source = audioCtx.createBufferSource();
+        source.buffer = sfxBuffers[path];
+        source.connect(audioCtx.destination);
+        playingSfx.add(source);
+        source.addEventListener("ended", () => playingSfx.delete(source));
+        source.start(0);
+        return;
+      }
+      // Fallback while the buffer is still decoding, or if Web Audio isn't
+      // available at all.
+      const sfx = new Audio(path);
       playingSfx.add(sfx);
       sfx.addEventListener("ended", () => playingSfx.delete(sfx));
       sfx.play().catch(() => playingSfx.delete(sfx));
@@ -1255,7 +1279,11 @@
     // through the same document.hidden check to avoid double-handling.
     function stopBackgroundAudio() {
       bgmAudio.pause();
-      playingSfx.forEach((sfx) => sfx.pause());
+      playingSfx.forEach((sfx) => {
+        try {
+          sfx.stop ? sfx.stop() : sfx.pause();
+        } catch {}
+      });
       playingSfx.clear();
     }
     document.addEventListener("visibilitychange", () => {
