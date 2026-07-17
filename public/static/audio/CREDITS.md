@@ -6,9 +6,9 @@ All tracks below are sourced from freesound.org. None require attribution
 ## Background music
 
 - **File:** `bgm.mp3`
-- **Track:** "BirdFish Happy Loop" (~16s marimba loop; trailing silence trimmed with ffmpeg for seamless looping)
-- **Author:** pinkinblue
-- **Source:** https://freesound.org/people/pinkinblue/sounds/425971/
+- **Track:** "Joyful Game Loop - Kitty Yarn Play" (~1:12 seamless loop, C major 120bpm)
+- **Author:** Venus17
+- **Source:** https://freesound.org/people/Venus17/sounds/840648/
 - **License:** CC0 1.0 (Public Domain)
 
 ## Sound effects
