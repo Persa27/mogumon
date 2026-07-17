@@ -1127,7 +1127,7 @@
       monsterEl.dataset.stage = stg;
       levelValueEl.textContent = String(monsterState.level);
       const progress = MonsterEngine.levelProgressFromPoints(monsterState.growthPoints);
-      const gaugePercent = Math.max(0, Math.min(100, (progress.pointsIntoLevel / (progress.pointsNeededForNextLevel || 1)) * 100));
+      const gaugePercent = Math.max(0, Math.min(100, (progress.pointsIntoLevel / (progress.pointsNeededForNext || 1)) * 100));
       levelFillEl.style.width = `${gaugePercent}%`;
     }
 
