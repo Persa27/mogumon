@@ -808,6 +808,7 @@
       <div class="menu-actions">
         <button id="openEncyclopedia">モンスター図鑑をみる</button>
         <button id="reloadMonster">新しいモンスターにする</button>
+        <button id="bgmToggle">BGM：<span id="bgmToggleLabel">ON</span></button>
         <button id="sfxToggle">効果音：<span id="sfxToggleLabel">ON</span></button>
         <button id="closeMenu">メニューを閉じる</button>
       </div>
@@ -880,17 +881,15 @@
     const bgmAudio = new Audio("/static/audio/bgm.mp3");
     bgmAudio.loop = true;
     bgmAudio.volume = 0.5;
-    let bgmStarted = false;
+    let bgmEnabled = true;
 
-    function startBgmOnce() {
-      if (bgmStarted) return;
-      bgmStarted = true;
-      bgmAudio.play().catch(() => {
-        // Autoplay may still be blocked; it will retry on the next interaction.
-        bgmStarted = false;
-      });
+    function tryStartBgm() {
+      if (!bgmEnabled || evolutionMode || !bgmAudio.paused) return;
+      bgmAudio.play().catch(() => {});
     }
-    document.addEventListener("pointerdown", startBgmOnce, { once: true });
+    // Browsers block audio until a user gesture, and the first play() attempt
+    // can still be rejected — keep retrying on every tap until playback sticks.
+    document.addEventListener("pointerdown", tryStartBgm);
 
     // ---- Audio (SFX) ----
     function playSfx(path) {
@@ -1145,7 +1144,7 @@
       setEvolutionMode(false);
       pendingEvolutionMonster = null;
       monsterEl.style.opacity = "1";
-      if (bgmStarted) bgmAudio.play().catch(() => {});
+      if (bgmEnabled) bgmAudio.play().catch(() => {});
       playScene("idle");
     }
 
@@ -1249,6 +1248,10 @@
       document.getElementById("sfxToggleLabel").textContent = sfxEnabled ? "ON" : "OFF";
     }
 
+    function updateBgmToggleLabel() {
+      document.getElementById("bgmToggleLabel").textContent = bgmEnabled ? "ON" : "OFF";
+    }
+
     document.getElementById("menuToggle").addEventListener("click", () => {
       menuPanelEl.classList.toggle("open");
     });
@@ -1256,6 +1259,15 @@
     document.getElementById("sfxToggle").addEventListener("click", () => {
       sfxEnabled = !sfxEnabled;
       updateSfxToggleLabel();
+    });
+    document.getElementById("bgmToggle").addEventListener("click", () => {
+      bgmEnabled = !bgmEnabled;
+      updateBgmToggleLabel();
+      if (bgmEnabled) {
+        tryStartBgm();
+      } else {
+        bgmAudio.pause();
+      }
     });
     document.getElementById("closeMenu").addEventListener("click", () => {
       menuPanelEl.classList.remove("open");
@@ -1266,6 +1278,7 @@
       renderFoodButtons();
       setFoodOverlay();
       updateSfxToggleLabel();
+      updateBgmToggleLabel();
       initGame();
     });
 
