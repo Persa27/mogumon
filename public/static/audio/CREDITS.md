@@ -6,9 +6,9 @@ All tracks below are sourced from freesound.org. None require attribution
 ## Background music
 
 - **File:** `bgm.mp3`
-- **Track:** "Simple Game Music Loop"
-- **Author:** Seth_Makes_Sounds
-- **Source:** https://freesound.org/people/Seth_Makes_Sounds/sounds/684511/
+- **Track:** "BirdFish Happy Loop" (~16s marimba loop; trailing silence trimmed with ffmpeg for seamless looping)
+- **Author:** pinkinblue
+- **Source:** https://freesound.org/people/pinkinblue/sounds/425971/
 - **License:** CC0 1.0 (Public Domain)
 
 ## Sound effects
@@ -26,7 +26,7 @@ All tracks below are sourced from freesound.org. None require attribution
 - **License:** CC0 1.0 (Public Domain)
 
 - **File:** `sfx_evolve.mp3`
-- **Sound:** "LevelUp.wav" (~4.0s, matching the ~4.5s evolution cutscene)
-- **Author:** InfiniteLifespan
-- **Source:** https://freesound.org/people/InfiniteLifespan/sounds/266454/
+- **Sound:** "Gewonnen2" (~4.1s after trimming trailing silence, matching the ~4.5s evolution cutscene)
+- **Author:** Kastenfrosch
+- **Source:** https://freesound.org/people/Kastenfrosch/sounds/162458/
 - **License:** CC0 1.0 (Public Domain)
