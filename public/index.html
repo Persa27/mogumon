@@ -430,9 +430,11 @@
       box-shadow:0 6px 0 rgba(148,91,155,.42);
       cursor:pointer;
     }
-    .tap-button.cooldown{
+    .tap-button.cooldown,
+    .tap-button:disabled{
       background:linear-gradient(180deg,#a7a8ad 0%,var(--gray) 100%);
       box-shadow:0 6px 0 rgba(92,96,104,.32);
+      cursor:not-allowed;
     }
     .sparkles{
       position:absolute;
@@ -1178,17 +1180,23 @@
       setStatus("じゅんびOK！たべさせてあげよう。");
     }
 
+    function setTapButtonDisabled(disabled) {
+      tapButtonEl.disabled = disabled;
+      tapButtonEl.classList.toggle("cooldown", disabled);
+    }
+
     function tapMeal() {
       const now = new Date();
       const result = MonsterEngine.evaluateTap({ lastTapAt, comboCount, now });
       setComboState(result.comboCount, result.comboSecondsRemaining ?? 0);
-      tapButtonEl.classList.add("cooldown");
-      window.setTimeout(() => tapButtonEl.classList.remove("cooldown"), 450);
 
       if (!result.isValid) {
         setStatus("ちょっとはやいみたい。ゆっくり食べよう！");
         return;
       }
+
+      setTapButtonDisabled(true);
+      window.setTimeout(() => setTapButtonDisabled(false), MonsterEngine.COMBO_TOO_FAST_SECONDS * 1000);
       // Tapping after a "finished" flourish quietly starts a fresh feeding round.
       sessionFinished = false;
       lastTapAt = now;
