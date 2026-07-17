@@ -1227,15 +1227,6 @@
     // Browsers block audio until a user gesture, and the first play() attempt
     // can still be rejected — keep retrying on every tap until playback sticks.
     document.addEventListener("pointerdown", tryStartBgm);
-    // Silence the game while it's in the background (tab switch, phone home
-    // screen) and pick the BGM back up when it returns.
-    document.addEventListener("visibilitychange", () => {
-      if (document.hidden) {
-        bgmAudio.pause();
-      } else {
-        tryStartBgm();
-      }
-    });
 
     // ---- Audio (SFX) ----
     // Preload each effect once so playback starts instantly instead of
@@ -1257,11 +1248,29 @@
       sfx.play().catch(() => playingSfx.delete(sfx));
     }
 
+    // Silence the game while it's in the background (tab switch, phone home
+    // screen or lock) and pick the BGM back up when it returns. iOS Safari
+    // doesn't always fire visibilitychange on backgrounding, so pagehide and
+    // window blur/focus are wired up too as a backstop — all three funnel
+    // through the same document.hidden check to avoid double-handling.
+    function stopBackgroundAudio() {
+      bgmAudio.pause();
+      playingSfx.forEach((sfx) => sfx.pause());
+      playingSfx.clear();
+    }
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) {
-        playingSfx.forEach((sfx) => sfx.pause());
-        playingSfx.clear();
+        stopBackgroundAudio();
+      } else {
+        tryStartBgm();
       }
+    });
+    window.addEventListener("pagehide", stopBackgroundAudio);
+    window.addEventListener("blur", () => {
+      if (document.hidden) stopBackgroundAudio();
+    });
+    window.addEventListener("focus", () => {
+      if (!document.hidden) tryStartBgm();
     });
 
     function getSceneFrames(assetFamily, scene) {
