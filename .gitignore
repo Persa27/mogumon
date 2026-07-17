@@ -25,3 +25,4 @@ public/static/monsters/**/*raw_evolve*.png
 public/static/monsters/**/*_sheet_extract.png
 public/static/monsters/**/*_raw_vs_processed.png
 public/static/monsters/**/*.transparent.png
+.vercel
