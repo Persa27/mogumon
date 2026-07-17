@@ -889,12 +889,21 @@
     let bgmEnabled = true;
 
     function tryStartBgm() {
-      if (!bgmEnabled || evolutionMode || !bgmAudio.paused) return;
+      if (!bgmEnabled || evolutionMode || document.hidden || !bgmAudio.paused) return;
       bgmAudio.play().catch(() => {});
     }
     // Browsers block audio until a user gesture, and the first play() attempt
     // can still be rejected — keep retrying on every tap until playback sticks.
     document.addEventListener("pointerdown", tryStartBgm);
+    // Silence the game while it's in the background (tab switch, phone home
+    // screen) and pick the BGM back up when it returns.
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        bgmAudio.pause();
+      } else {
+        tryStartBgm();
+      }
+    });
 
     // ---- Audio (SFX) ----
     // Preload each effect once so playback starts instantly instead of
@@ -906,11 +915,22 @@
       sfxCache[path] = audio;
     }
 
+    const playingSfx = new Set();
+
     function playSfx(path) {
-      if (!sfxEnabled) return;
+      if (!sfxEnabled || document.hidden) return;
       const sfx = sfxCache[path] ? sfxCache[path].cloneNode() : new Audio(path);
-      sfx.play().catch(() => {});
+      playingSfx.add(sfx);
+      sfx.addEventListener("ended", () => playingSfx.delete(sfx));
+      sfx.play().catch(() => playingSfx.delete(sfx));
     }
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        playingSfx.forEach((sfx) => sfx.pause());
+        playingSfx.clear();
+      }
+    });
 
     function getSceneFrames(assetFamily, scene) {
       return [1, 2, 3].map((n) => `/static/monsters/${assetFamily}/${scene}/frame${n}.png`);
@@ -1161,7 +1181,7 @@
       setEvolutionMode(false);
       pendingEvolutionMonster = null;
       monsterEl.style.opacity = "1";
-      if (bgmEnabled) bgmAudio.play().catch(() => {});
+      tryStartBgm();
       playScene("idle");
     }
 
