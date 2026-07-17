@@ -184,9 +184,6 @@
       border-radius:1px;
       background:var(--border);
     }
-    .hud-eat{
-      flex:1 1 0;
-    }
     .stage{
       grid-area:stage;
       position:relative;
@@ -468,6 +465,14 @@
     .menu-panel h2{
       margin:0 0 10px;
       font-size:18px;
+    }
+    .menu-stat{
+      border:2px solid var(--border);
+      background:#fff;
+      padding:10px 12px;
+      font-weight:700;
+      font-size:13px;
+      margin-bottom:10px;
     }
     .menu-actions{
       display:grid;
@@ -777,7 +782,6 @@
     <header class="hud">
       <div class="hud-box">なまえ：<strong id="monsterName">モモ</strong></div>
       <div class="hud-box">レベル：<strong id="levelValue">1</strong><div class="level-meter"><div class="level-fill" id="levelFill"></div></div></div>
-      <div class="hud-box hud-eat">たべたかいすう：<strong id="eatCount">0</strong></div>
       <button class="menu-button" id="menuToggle" aria-label="メニュー">
         <span class="hamburger-icon"><span></span><span></span><span></span></span>
       </button>
@@ -805,6 +809,7 @@
 
     <aside class="menu-panel" id="menuPanel">
       <h2>メニュー</h2>
+      <div class="menu-stat">たべたかいすう：<strong id="eatCount">0</strong></div>
       <div class="menu-actions">
         <button id="openEncyclopedia">モンスター図鑑をみる</button>
         <button id="reloadMonster">新しいモンスターにする</button>
@@ -892,9 +897,18 @@
     document.addEventListener("pointerdown", tryStartBgm);
 
     // ---- Audio (SFX) ----
+    // Preload each effect once so playback starts instantly instead of
+    // waiting for a network fetch on every tap.
+    const sfxCache = {};
+    for (const path of ["/static/audio/sfx_food_select.mp3", "/static/audio/sfx_eat.mp3", "/static/audio/sfx_evolve.mp3"]) {
+      const audio = new Audio(path);
+      audio.preload = "auto";
+      sfxCache[path] = audio;
+    }
+
     function playSfx(path) {
       if (!sfxEnabled) return;
-      const sfx = new Audio(path);
+      const sfx = sfxCache[path] ? sfxCache[path].cloneNode() : new Audio(path);
       sfx.play().catch(() => {});
     }
 
@@ -1108,6 +1122,9 @@
     async function runEvolutionScene(durationMs = 1800) {
       const fromMonster = currentMonster;
       if (!bgmAudio.paused) bgmAudio.pause();
+      // Fire the fanfare here (not at the feeding tap) so it spans the
+      // cutscene itself: ~1.5s of flashing + 3s of the evolved form.
+      playSfx("/static/audio/sfx_evolve.mp3");
       setEvolutionMode(true);
       stopAnimation();
       const toMonster = pendingEvolutionMonster || currentMonster;
@@ -1214,7 +1231,6 @@
       MonsterEngine.saveState(monsterState);
 
       if (evolved) {
-        playSfx("/static/audio/sfx_evolve.mp3");
         pendingEvolutionMonster = MonsterEngine.assetFamily(monsterState);
         currentMonster = previousMonster;
         (async () => {
