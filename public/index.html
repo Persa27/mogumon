@@ -121,28 +121,39 @@
       grid-area:hud;
       position:relative;
       z-index:10;
-      display:grid;
-      grid-template-columns:1fr 1fr;
+      display:flex;
+      align-items:stretch;
       gap:4px;
       padding:6px 6px 4px;
     }
     .hud-box,
     .menu-button{
-      min-height:38px;
+      min-height:34px;
       border:2px solid var(--border);
       background:#fff;
       box-shadow:2px 2px 0 rgba(31,54,80,.18);
       display:flex;
       align-items:center;
-      gap:6px;
-      padding:4px 6px;
-      font-size:12px;
+      gap:4px;
+      padding:3px 5px;
+      font-size:11px;
       font-weight:700;
     }
-    .hud-box strong{font-size:14px}
+    .hud-box{
+      flex:1 1 0;
+      min-width:0;
+      white-space:nowrap;
+      overflow:hidden;
+    }
+    .hud-box strong{
+      font-size:12px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
     .level-meter{
       flex:1;
-      height:12px;
+      min-width:20px;
+      height:10px;
       border:1px solid var(--border);
       background:#e9edf2;
       overflow:hidden;
@@ -156,11 +167,10 @@
     .menu-button{
       cursor:pointer;
       justify-content:center;
-      min-width:56px;
-      grid-column:span 1;
+      flex:0 0 auto;
     }
     .hud-eat{
-      grid-column:1 / -1;
+      flex:1 1 0;
     }
     .stage{
       grid-area:stage;
@@ -475,7 +485,6 @@
           "stage action";
       }
       .hud{
-        grid-template-columns:1fr 1fr 1fr auto;
         gap:3px;
         padding:4px 4px 3px;
       }
@@ -488,8 +497,6 @@
       }
       .hud-box strong{font-size:11px}
       .level-meter{height:9px}
-      .hud-eat{grid-column:auto}
-      .menu-button{min-width:42px;font-size:10px}
       .food-row{
         flex-direction:column;
         align-items:center;
