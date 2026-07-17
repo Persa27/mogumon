@@ -14,19 +14,19 @@ All tracks below are sourced from freesound.org. None require attribution
 ## Sound effects
 
 - **File:** `sfx_food_select.mp3`
-- **Sound:** "Mouse clicks"
-- **Author:** Breviceps
-- **Source:** https://freesound.org/people/Breviceps/sounds/447938/
+- **Sound:** "Cartoon Pop" (~0.5s)
+- **Author:** Mish7913
+- **Source:** https://freesound.org/people/Mish7913/sounds/741368/
 - **License:** CC0 1.0 (Public Domain)
 
 - **File:** `sfx_eat.mp3`
-- **Sound:** "Bite Chew Crunch Gulp.wav"
-- **Author:** D.jones
-- **Source:** https://freesound.org/people/D.jones/sounds/527780/
+- **Sound:** "Bite (Cartoon Style)" (~0.3s)
+- **Author:** Jofae
+- **Source:** https://freesound.org/people/Jofae/sounds/353067/
 - **License:** CC0 1.0 (Public Domain)
 
 - **File:** `sfx_evolve.mp3`
-- **Sound:** "Level Up"
-- **Author:** qubodup
-- **Source:** https://freesound.org/people/qubodup/sounds/442943/
+- **Sound:** "Level Up / Mission Complete" (~3.4s)
+- **Author:** Beetlemuse
+- **Source:** https://freesound.org/people/Beetlemuse/sounds/528958/
 - **License:** CC0 1.0 (Public Domain)
