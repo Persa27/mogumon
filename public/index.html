@@ -482,15 +482,6 @@
       font-weight:700;
       cursor:pointer;
     }
-    .menu-section{
-      border-top:1px solid #cad9e6;
-      padding-top:10px;
-      margin-top:10px;
-    }
-    .menu-section h3{
-      margin:0 0 8px;
-      font-size:14px;
-    }
     /* 横画面（landscape） */
     @media (orientation:landscape){
       .app-shell{
@@ -816,13 +807,7 @@
       <h2>保護者メニュー</h2>
       <div class="menu-actions">
         <button id="openEncyclopedia">モンスター図鑑をみる</button>
-        <button id="finishSession">今回の食事を終了する</button>
-        <button id="showResult">今回の結果をみる</button>
         <button id="reloadMonster">新しいモンスターにする</button>
-      </div>
-      <div class="menu-section">
-        <h3>メッセージ</h3>
-        <div id="menuStatus">準備中…</div>
       </div>
     </aside>
 
@@ -863,7 +848,6 @@
     const levelFillEl = document.getElementById("levelFill");
     const eatCountEl = document.getElementById("eatCount");
     const menuPanelEl = document.getElementById("menuPanel");
-    const menuStatusEl = document.getElementById("menuStatus");
     const foodRowEl = document.getElementById("foodRow");
     const comboBannerEl = document.getElementById("comboBanner");
     const comboValueEl = document.getElementById("comboValue");
@@ -876,7 +860,6 @@
     let monsterState = null; // MonsterEngine state, persisted via MonsterEngine.saveState
     let eatCount = 0;
     let animationTimer = null;
-    let sessionFinished = false;
     let foodStackCounts = {};
     const STACK_MAX = 12;
     let comboCount = 0;
@@ -894,13 +877,9 @@
       return [1, 2, 3].map((n) => `/static/monsters/${assetFamily}/${scene}/frame${n}.png`);
     }
 
-    function setStatus(text) {
-      menuStatusEl.textContent = text;
-    }
-
     function updateComboDisplay() {
       comboValueEl.textContent = String(comboCount);
-      const isVisible = comboCount > 1 && comboSecondsRemaining > 0 && !sessionFinished;
+      const isVisible = comboCount > 1 && comboSecondsRemaining > 0;
       comboBannerEl.classList.toggle("visible", isVisible);
       const percent = Math.max(0, Math.min(100, (comboSecondsRemaining / COMBO_CONTINUE_SECONDS) * 100));
       comboTimerFillEl.style.width = `${percent}%`;
@@ -915,7 +894,7 @@
 
     function startComboCountdown() {
       stopComboCountdown();
-      if (comboCount <= 1 || comboSecondsRemaining <= 0 || sessionFinished) {
+      if (comboCount <= 1 || comboSecondsRemaining <= 0) {
         updateComboDisplay();
         return;
       }
@@ -1093,7 +1072,7 @@
       }, scene === "idle" ? 500 : scene === "eat" ? 180 : 240);
       if (durationMs > 0) {
         window.setTimeout(() => {
-          if (!sessionFinished && !evolutionMode) {
+          if (!evolutionMode) {
             playScene("idle");
           }
         }, durationMs);
@@ -1138,9 +1117,7 @@
       setEvolutionMode(false);
       pendingEvolutionMonster = null;
       monsterEl.style.opacity = "1";
-      if (!sessionFinished) {
-        playScene("idle");
-      }
+      playScene("idle");
     }
 
     function updateHudFromState() {
@@ -1164,7 +1141,6 @@
       comboCount = 0;
       comboSecondsRemaining = 0;
       lastTapAt = null;
-      sessionFinished = false;
       stopComboCountdown();
       clearFoodStacks();
       eatCountEl.textContent = "0";
@@ -1177,7 +1153,6 @@
       resetSessionCounters();
       updateHudFromState();
       playScene("idle");
-      setStatus("じゅんびOK！たべさせてあげよう。");
     }
 
     function setTapButtonDisabled(disabled) {
@@ -1191,28 +1166,23 @@
       setComboState(result.comboCount, result.comboSecondsRemaining ?? 0);
 
       if (!result.isValid) {
-        setStatus("ちょっとはやいみたい。ゆっくり食べよう！");
         return;
       }
 
       setTapButtonDisabled(true);
       window.setTimeout(() => setTapButtonDisabled(false), MonsterEngine.COMBO_TOO_FAST_SECONDS * 1000);
-      // Tapping after a "finished" flourish quietly starts a fresh feeding round.
-      sessionFinished = false;
       lastTapAt = now;
 
       eatCount += 1;
       addToFoodStack(selectedFood);
       eatCountEl.textContent = String(eatCount);
 
-      const { state: newState, leveledUp, evolved } = MonsterEngine.applyFeeding(monsterState, selectedFood, result.grantedPoints);
+      const { state: newState, evolved } = MonsterEngine.applyFeeding(monsterState, selectedFood, result.grantedPoints);
       totalPoints += result.grantedPoints;
       showPtBubble(result.grantedPoints);
       const previousMonster = currentMonster;
       monsterState = newState;
       MonsterEngine.saveState(monsterState);
-
-      const foodLabel = FOODS.find((food) => food.key === selectedFood).label;
 
       if (evolved) {
         pendingEvolutionMonster = MonsterEngine.assetFamily(monsterState);
@@ -1221,35 +1191,11 @@
           await absorbStackFoods();
           await runEvolutionScene(2200);
           updateHudFromState();
-          setStatus(`${MonsterEngine.displayName(monsterState)}にしんかしたよ！`);
         })();
       } else {
         updateHudFromState();
         playScene("eat", 1000);
-        if (leveledUp) {
-          setStatus(`${foodLabel}をぱくっ！ レベルアップ！ Lv.${monsterState.level}`);
-        } else {
-          setStatus(`${foodLabel}をぱくっ！ +${result.grantedPoints}pt`);
-        }
       }
-    }
-
-    async function finishCurrentSession() {
-      sessionFinished = true;
-      stopComboCountdown();
-      comboCount = 0;
-      comboSecondsRemaining = 0;
-      updateComboDisplay();
-      await runEvolutionScene(2200);
-      setStatus("食事を終了しました。");
-    }
-
-    function showCurrentResult() {
-      if (eatCount === 0) {
-        setStatus("まだ結果がありません。");
-        return;
-      }
-      setStatus(`今回の結果: ${totalPoints}pt / 最大コンボ ${maxCombo}`);
     }
 
     function reloadMonster() {
@@ -1263,15 +1209,12 @@
       resetSessionCounters();
       updateHudFromState();
       playScene("idle");
-      setStatus("新しいモンスターでスタート！");
       menuPanelEl.classList.remove("open");
     }
 
     document.getElementById("menuToggle").addEventListener("click", () => {
       menuPanelEl.classList.toggle("open");
     });
-    document.getElementById("finishSession").addEventListener("click", finishCurrentSession);
-    document.getElementById("showResult").addEventListener("click", showCurrentResult);
     document.getElementById("reloadMonster").addEventListener("click", reloadMonster);
     tapButtonEl.addEventListener("click", tapMeal);
 
